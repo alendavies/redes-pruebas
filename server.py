@@ -123,8 +123,9 @@ def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket
     bloqnum = 0
     es_ultimo = False
     serverSocket.setblocking(0)
+    attempts = 0
 
-    while es_ultimo == False:
+    while es_ultimo == False and attempts <= MAX_ATTEMPTS:
 
         if len(data[bloqnum*PACKET_SIZE:]) < PACKET_SIZE:
 
@@ -138,8 +139,21 @@ def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket
         serverSocket.sendto(data_packet.serialize(), clientAddress)
         print("DATA packet sent")
 
+        prev_bloqnum = bloqnum
         bloqnum = trap(bloqnum, serverSocket)
 
+        if prev_bloqnum == bloqnum:
+            attempts+=1
+        else:
+            attempts = 0
+
+    if es_ultimo == True:
+        print("Final packet sent")
+        return True
+
+    if attempts == MAX_ATTEMPTS:
+        print("Max attempts reached")
+        return False
 
 if __name__ == "__main__":
     main()
