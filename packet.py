@@ -1,6 +1,8 @@
 from enum import Enum
 from struct import pack, unpack
 
+from config import PACKET_SIZE
+
 class Type(Enum):
     READ_REQUEST = 1
     WRITE_REQUEST = 2
@@ -46,37 +48,51 @@ class WriteRequestPacket:
 
 
 class DataPacket:
-    FORMAT = "!H"
+    FORMAT = "!HH"
     
-    def __init__(self, data: bytes):
+    def __init__(self, block_number: int, data: bytes):
         self.type = Type.DATA.value
+        self.block_number = block_number
         self.data = data
 
     def serialize(self) -> bytes:
-        return b''.join([pack(self.FORMAT, self.type), self.data])
+        return b''.join([pack(self.FORMAT, self.type, self.block_number), self.data])
+
+    def get_block_number(self):
+        return self.block_number
+
+    def get_data(self):
+        return self.data
+
+    def get_data_size(self):
+        return len(self.data)
+
+    def is_final_packet(self):
+        return len(self.data) < PACKET_SIZE
 
     @classmethod
     def deserialize(cls, packet: bytes):
-        return cls(packet[2:])
+        return cls(int(packet[2:4].decode()), packet[4:])
 
     def __str__(self):
-        return f"Type: Data, Data: {self.data}"
+        return f"Type: Data, Block Number: #{self.block_number}, Data: {self.data}"
 
 class AckPacket:
-    FORMAT = "!H"
+    FORMAT = "!HH"
     
-    def __init__(self):
+    def __init__(self, block_number: int):
         self.type = Type.ACKOWLEDGMENT.value
+        self.block_number = block_number
 
     def serialize(self) -> bytes:
-        return b''.join([pack(self.FORMAT, self.type)])
+        return b''.join([pack(self.FORMAT, self.type, self.block_number)])
 
     @classmethod
-    def deserialize(cls):
-        return cls()
+    def deserialize(cls, packet: bytes):
+        return cls(int(packet[2:4].decode()))
 
     def __str__(self):
-        return f"Type: Ack"
+        return f"Type: Ack, Block Number: #{self.block_number}"
 
 
 class ErrorPacket:
@@ -109,7 +125,7 @@ class BasePacket:
         elif type == Type.DATA.value:
             return DataPacket.deserialize(packet) 
         elif type == Type.ACKOWLEDGMENT.value:
-            return AckPacket.deserialize()
+            return AckPacket.deserialize(packet)
         elif type == Type.ERROR.value:
             return ErrorPacket.deserialize()
         else: raise Exception("Invalid packet type")

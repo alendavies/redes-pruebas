@@ -55,15 +55,15 @@ def handlePacketByType(packet, clientAddress, serverSocket):
         raise Exception("Unexpected packet type")
 
 
-def handleWriteRequest(packet: WriteRequestPacket, clientAddress, serverSocket):
+def handleWriteRequest(req_packet: WriteRequestPacket, clientAddress, serverSocket):
 
     print("Handling WRITE REQUEST packet")
-    print(packet)
+    print(req_packet)
 
     bufer = []
 
-    ackPacket = AckPacket()
-    serverSocket.sendto(ackPacket.serialize(), clientAddress)
+    ack_packet = AckPacket(0)
+    serverSocket.sendto(ack_packet.serialize(), clientAddress)
     print("ACK packet sent")
 
     while True:
@@ -75,14 +75,13 @@ def handleWriteRequest(packet: WriteRequestPacket, clientAddress, serverSocket):
 
             print("Received DATA packet: ")
             print(packet)
-            bufer.append(packet.data.decode())
+            bufer.append(packet.get_data())
 
-            ackPacket = AckPacket()
-            serverSocket.sendto(ackPacket.serialize(), clientAddress)
+            ack_packet = AckPacket(packet.get_block_number())
+            serverSocket.sendto(ack_packet.serialize(), clientAddress)
             print("ACK packet sent")
 
-            if len(packet.data) < PACKET_SIZE:
-                # End of file
+            if packet.is_final_packet():
                 break
 
         else:
@@ -93,7 +92,7 @@ def handleWriteRequest(packet: WriteRequestPacket, clientAddress, serverSocket):
     print(data)
 
 
-def handleReadRequest(packet: ReadRequestPacket, clientAddress, serverSocket):
+def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket):
 
     print("Handling READ REQUEST packet")
 
