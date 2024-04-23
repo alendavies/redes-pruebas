@@ -98,24 +98,21 @@ def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket
 
     data = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 
-    while True:
+    bloqnum = 0
+    es_ultimo = False
 
-        if len(data) < PACKET_SIZE:
-            packet = DataPacket(data.encode())
-            serverSocket.sendto(packet.serialize(), clientAddress)
-            print("DATA packet sent")
+    while es_ultimo == False:
 
-            packet, clientAddress = serverSocket.recvfrom(2048)
-            packet = BasePacket.get_packet(packet)
+        if len(data[bloqnum*PACKET_SIZE:]) < PACKET_SIZE:
 
-            if isinstance(packet, AckPacket):
-                print("Received ACK packet")
-                break
-            else:
-                raise Exception("Unexpected packet type")
+            cacho = data[bloqnum*PACKET_SIZE:].encode()
+            es_ultimo = True
 
-        packet = DataPacket(data[:PACKET_SIZE].encode())
-        serverSocket.sendto(packet.serialize(), clientAddress)
+        else:
+            cacho = data[bloqnum*PACKET_SIZE:(bloqnum+1) * PACKET_SIZE].encode()
+
+        data_packet = DataPacket(bloqnum, cacho)
+        serverSocket.sendto(data_packet.serialize(), clientAddress)
         print("DATA packet sent")
 
         packet, clientAddress = serverSocket.recvfrom(2048)
@@ -125,8 +122,6 @@ def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket
             print("Received ACK packet")
         else:
             raise Exception("Unexpected packet type")
-
-        data = data[PACKET_SIZE:]
 
 
 if __name__ == "__main__":
