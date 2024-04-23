@@ -1,5 +1,6 @@
 from socket import *
 from struct import pack
+import time
 from config import *
 
 from packet import *
@@ -91,6 +92,27 @@ def handleWriteRequest(req_packet: WriteRequestPacket, clientAddress, serverSock
 
     print(data)
 
+def trap(bloqnum, socket) -> int:
+
+    # Esperar ACK o alcanzar el tiempo de espera
+    timeout = 5  # Tiempo de espera en segundos
+    start_time = time.time()
+
+    while True:
+
+        packet, _ = socket.recvfrom(2048)
+
+        if isinstance(packet, AckPacket):
+            if packet.get_block_number() == bloqnum:
+                print("Received ACK packet")
+                return bloqnum+1
+        else:
+            # Verificar si se ha excedido el tiempo máximo de espera
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= timeout:
+                print("Tiempo de espera excedido")
+                break
+    return bloqnum
 
 def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket):
 
@@ -100,6 +122,7 @@ def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket
 
     bloqnum = 0
     es_ultimo = False
+    serverSocket.setblocking(0)
 
     while es_ultimo == False:
 
@@ -115,13 +138,7 @@ def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket
         serverSocket.sendto(data_packet.serialize(), clientAddress)
         print("DATA packet sent")
 
-        packet, clientAddress = serverSocket.recvfrom(2048)
-        packet = BasePacket.get_packet(packet)
-
-        if isinstance(packet, AckPacket):
-            print("Received ACK packet")
-        else:
-            raise Exception("Unexpected packet type")
+        bloqnum = trap(bloqnum, serverSocket)
 
 
 if __name__ == "__main__":
