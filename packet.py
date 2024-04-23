@@ -87,6 +87,9 @@ class AckPacket:
     def serialize(self) -> bytes:
         return b''.join([pack(self.FORMAT, self.type, self.block_number)])
 
+    def get_block_number(self):
+        return self.block_number
+
     @classmethod
     def deserialize(cls, packet: bytes):
         return cls(int(packet[2:4].decode()))
