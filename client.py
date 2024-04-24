@@ -1,5 +1,5 @@
 from socket import *
-from packet import * 
+from packet import *
 from time import sleep
 from config import *
 
@@ -19,7 +19,7 @@ def handle_read():
         if isinstance(packet, DataPacket):
             print("Received: ", packet)
             file.append(packet.data.decode())
-            ack_packet = AckPacket()
+            ack_packet = AckPacket(packet.get_block_number())
             clientSocket.sendto(ack_packet.serialize(), (SERVER_IP, SERVER_PORT))
         else:
             raise Exception("Invalid packet")
@@ -33,7 +33,7 @@ def handle_read():
 
 def handle_write():
     filename = input("Enter the filename: ")
-    
+
     file = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, ligula nec tincidunt luctus, odio est luctus orci, eu ultricies orci nunc nec nunc. Nullam nec lorem vel nunc lacinia aliquet. Etiam in semper nunc. Nulla facilisi. Nullam auctor, odio in ultricies tincidunt, nisl purus lacinia odio, nec lacinia nunc mi sit amet nunc."
 
     packet_req = WriteRequestPacket(filename)
@@ -49,8 +49,10 @@ def handle_write():
     else:
         raise Exception("Invalid packet")
 
+    bloqnum = 0
+
     while 1:
-        data_packet = DataPacket(file[:PACKET_SIZE].encode())
+        data_packet = DataPacket(bloqnum, file[:PACKET_SIZE].encode())
         print("Sending: ", data_packet)
         clientSocket.sendto(data_packet.serialize(), (SERVER_IP, SERVER_PORT))
         packet, serverAddress = clientSocket.recvfrom(2048)
@@ -59,6 +61,7 @@ def handle_write():
         if isinstance(packet, AckPacket):
             print("Received ACK")
             file = file[PACKET_SIZE:]
+            bloqnum += 1
             if len(file) == 0:
                 print("Completed")
                 break
@@ -87,10 +90,10 @@ while 1:
     # clientSocket.sendto(serialized, (SERVER_IP, SERVER_PORT))
     #
     # print("Waiting for server response...")
-    # 
+    #
     # response, serverAddress = clientSocket.recvfrom(2048)
     # print("Received: ", response)
-    # 
+    #
     # parsed_res = deserialize(response)
     # print("Parsed response: ", parsed_res)
 
