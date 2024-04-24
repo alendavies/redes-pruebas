@@ -16,13 +16,12 @@ class ServerSide:
 
         print("Handling READ REQUEST packet")
 
-        ack_packet = AckPacket(0)
-        self.socket.sendto(ack_packet.serialize(), client_address)
+        self.send_ACK(0, client_address)
         print("ACK packet for request sent")
 
         data = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 
-        bloqnum = 1
+        bloqnum = 0
         es_ultimo = False
         attempts = 0
 
@@ -30,17 +29,18 @@ class ServerSide:
 
             if len(data[bloqnum*PACKET_SIZE:]) < PACKET_SIZE:
 
-                cacho = data[bloqnum*PACKET_SIZE:].encode()
+                chunk = data[bloqnum*PACKET_SIZE:].encode()
                 es_ultimo = True
 
             else:
-                cacho = data[bloqnum*PACKET_SIZE:(bloqnum+1) * PACKET_SIZE].encode()
+                chunk = data[bloqnum*PACKET_SIZE:(bloqnum+1) * PACKET_SIZE].encode()
 
-            data_packet = DataPacket(bloqnum, cacho)
+            data_packet = DataPacket(bloqnum, chunk)
             self.socket.sendto(data_packet.serialize(), client_address)
             print("DATA packet sent")
 
             prev_bloqnum = bloqnum
+
             bloqnum = self.trap(bloqnum, self.socket)
 
             if prev_bloqnum == bloqnum:
