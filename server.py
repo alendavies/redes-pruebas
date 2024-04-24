@@ -5,25 +5,6 @@ from config import *
 
 from packet import *
 
-class Packet:
-
-    FORMAT = "!I"
-
-    def __init__(self, seqnum, data):
-        self.seqnum = seqnum
-        self.data = data
-
-    def serialize(self) -> bytes:
-        return b"".join([pack(Packet.FORMAT, 1), self.data.encode()])
-
-    def __str__(self):
-        return f"SeqNum: {self.seqnum}, Data: {self.data}"
-
-
-def deserialize(data: bytes) -> Packet:
-    return Packet(data[0], data[1:].decode())
-
-
 def main():
 
     serverSocket = socket(AF_INET, SOCK_DGRAM)
