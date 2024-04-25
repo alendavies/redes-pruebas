@@ -8,7 +8,7 @@ class ServerSide:
     def __init__(self, server_port):
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.socket.bind(("", server_port))
-        self.socket.setblocking(0)
+        self.socket.setblocking(False)
         print("The server is ready to receive")
 
 
@@ -16,7 +16,7 @@ class ServerSide:
 
         print("Handling READ REQUEST packet")
 
-        self.send_ACK(0, client_address)
+        # self.send_ACK(0, client_address)
         print("ACK packet for request sent")
 
         data = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
@@ -65,18 +65,21 @@ class ServerSide:
 
         while True:
 
-            packet, _ = server_socket.recvfrom(2048)
+            try:
+                packet, _ = server_socket.recvfrom(2048)
+                if isinstance(packet, AckPacket):
+                    if packet.get_block_number() == bloqnum:
+                        print("Received ACK packet")
+                        return bloqnum+1
+                else:
+                    # Verificar si se ha excedido el tiempo máximo de espera
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time >= max_time:
+                        print("Tiempo de espera excedido")
+                        break
+            except BlockingIOError as e:
+                pass
 
-            if isinstance(packet, AckPacket):
-                if packet.get_block_number() == bloqnum:
-                    print("Received ACK packet")
-                    return bloqnum+1
-            else:
-                # Verificar si se ha excedido el tiempo máximo de espera
-                elapsed_time = time.time() - start_time
-                if elapsed_time >= max_time:
-                    print("Tiempo de espera excedido")
-                    break
 
         return bloqnum
 

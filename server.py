@@ -57,7 +57,7 @@ def handleWriteRequest(req_packet: WriteRequestPacket, clientAddress, serverSock
 
             print("Received DATA packet: ")
             print(packet)
-            bufer.append(packet.get_data())
+            bufer.append(packet.get_data().decode())
 
             ack_packet = AckPacket(packet.get_block_number())
             serverSocket.sendto(ack_packet.serialize(), clientAddress)
@@ -73,26 +73,29 @@ def handleWriteRequest(req_packet: WriteRequestPacket, clientAddress, serverSock
 
     print(data)
 
-def trap(bloqnum, socket) -> int:
+def trap(bloqnum, server_socket) -> int:
 
     # Esperar ACK o alcanzar el tiempo de espera
-    timeout = 5  # Tiempo de espera en segundos
+    max_time = 5  # Tiempo de espera en segundos
     start_time = time.time()
 
     while True:
 
-        packet, _ = socket.recvfrom(2048)
+        try:
+            packet, _ = server_socket.recvfrom(2048)
+            if isinstance(packet, AckPacket):
+                if packet.get_block_number() == bloqnum:
+                    print("Received ACK packet")
+                    return bloqnum+1
+            else:
+                # Verificar si se ha excedido el tiempo máximo de espera
+                elapsed_time = time.time() - start_time
+                if elapsed_time >= max_time:
+                    print("Tiempo de espera excedido")
+                    break
+        except BlockingIOError:
+            pass
 
-        if isinstance(packet, AckPacket):
-            if packet.get_block_number() == bloqnum:
-                print("Received ACK packet")
-                return bloqnum+1
-        else:
-            # Verificar si se ha excedido el tiempo máximo de espera
-            elapsed_time = time.time() - start_time
-            if elapsed_time >= timeout:
-                print("Tiempo de espera excedido")
-                break
     return bloqnum
 
 def handleReadRequest(req_packet: ReadRequestPacket, clientAddress, serverSocket):

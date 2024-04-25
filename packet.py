@@ -72,7 +72,7 @@ class DataPacket:
 
     @classmethod
     def deserialize(cls, packet: bytes):
-        return cls(int(packet[2:4].decode()), packet[4:])
+        return cls(unpack(cls.FORMAT, packet[:4])[1], packet[4:])
 
     def __str__(self):
         return f"Type: Data, Block Number: #{self.block_number}, Data: {self.data}"
@@ -92,7 +92,7 @@ class AckPacket:
 
     @classmethod
     def deserialize(cls, packet: bytes):
-        return cls(int(packet[2:4].decode()))
+        return cls(unpack(cls.FORMAT, packet)[1])
 
     def __str__(self):
         return f"Type: Ack, Block Number: #{self.block_number}"
