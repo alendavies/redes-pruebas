@@ -1,13 +1,101 @@
 from socket import *
 import time
+from custom_errors import ReadRequestNotAcknowledged, Timeout
 from packet import *
 from config import *
+from protocol import Protocol
+
+# TODO: documentar bien y loguear
 
 class ClientSide:
 
     def __init__(self):
-
         self.socket = socket(AF_INET, SOCK_DGRAM)
+        self.socket_size = 2048
+        self.max_time = 5
+
+    def send(self, packet: bytes):
+        self.socket.sendto(packet, (SERVER_IP, SERVER_PORT))
+
+    def write_request_trap(self) -> AckWriteRequest:
+        """
+        Waits MAX_TIME for the acknowledgment of the write
+        request, while ignoring any other packet received.
+        """
+        start_time = time.time()
+
+        while True:
+            try:
+                packet, _ = self.receive()
+                if isinstance(packet, AckWriteRequest):
+                    print("Received ACK packet")
+                    return packet 
+                else:
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time >= self.max_time:
+                        print("Max time reached")
+                        break
+            except BlockingIOError:
+                pass
+
+        raise Timeout 
+
+    def read_request_trap(self) -> DataPacket:
+        """
+        Waits MAX_TIME for the acknowledgment of the read 
+        request, while ignoring any other packet received.
+        """
+        start_time = time.time()
+
+        while True:
+            try:
+                packet, _ = self.receive()
+                if isinstance(packet, DataPacket):
+                    if packet.get_block_number() == 0:
+                        print("Received first data packet")
+                        return packet 
+                elif isinstance(packet, ErrorPacket):
+                    print("Received error packet")
+                    # TODO: narrow this exception, define protocol errors
+                    raise Exception
+                else:
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time >= self.max_time:
+                        print("Max time reached")
+                        break
+            except BlockingIOError:
+                pass
+
+        raise Timeout 
+
+    def receive(self):
+        return self.socket.recvfrom(self.socket_size)
+
+    def initiate_read_request(self, filename: str):
+        packet_req = ReadRequestPacket(filename)
+        self.send(packet_req.serialize())
+
+        # TODO: add attempts
+        try:
+            req_ack = self.read_request_trap()
+        except Timeout:
+            print("couldt connect with the server")
+            raise ReadRequestNotAcknowledged
+
+        # By this point, the write request is supposed to ack, by
+        # having received the first packet.
+
+        try:
+            file = Protocol().receive_message(req_ack.get_block_number(), req_ack.get_data())
+        except Exception as e:
+            # TODO: Acá manejar error
+            print(e)
+            raise Exception
+
+        return file
+
+    def initiate_write_request(self):
+        pass
 
     def handle_read(self):
 

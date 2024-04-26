@@ -9,7 +9,10 @@ class Type(Enum):
     DATA = 3
     ACKOWLEDGMENT = 4
     ERROR = 5
+    ACK_READ_REQ = 6
+    ACK_WRITE_REQ = 7
 
+# TODO: rename "deserialize" to "create_from_bytes"
 
 class ReadRequestPacket:
     FORMAT = "!H"
@@ -76,6 +79,35 @@ class DataPacket:
 
     def __str__(self):
         return f"Type: Data, Block Number: #{self.block_number}, Data: {self.data}"
+
+class AckReadRequest:
+    FORMAT = "!HH"
+
+    def __init__(self, file_size: int):
+        self.type = Type.ACK_READ_REQ.value
+        self.file_size = file_size
+
+    def serialize(self) -> bytes:
+        return b''.join([pack(self.FORMAT, self.type, self.file_size)])
+
+    @classmethod
+    def deserialize(cls, packet: bytes):
+        return cls(unpack(cls.FORMAT, packet)[1])
+
+# TODO: chequear nombre de archivo, espacio dispnible, etc
+
+class AckWriteRequest:
+    FORMAT = "!HH"
+
+    def __init__(self):
+        self.type = Type.ACK_WRITE_REQ.value
+    
+    def serialize(self) -> bytes:
+        return b''.join([pack(self.FORMAT, self.type)])
+
+    @classmethod
+    def deserialize(cls):
+        return cls()
 
 class AckPacket:
     FORMAT = "!HH"
