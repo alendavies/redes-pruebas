@@ -28,9 +28,9 @@ class ClientSide:
                 attempts+=1
                 print("couldt connect with the server")
 
-            """ except custom_errors.ErrorPacket:
+            except custom_errors.ErrorPacket:
                 print("Error packet received")
-                raise custom_errors.ErrorPacket """
+                raise custom_errors.ErrorPacket
 
         if attempts == MAX_ATTEMPTS:
             raise custom_errors.ReadRequestNotAcknowledged
@@ -64,9 +64,9 @@ class ClientSide:
                 attempts+=1
                 print("couldt connect with the server")
 
-            """ except custom_errors.ErrorPacket:
+            except custom_errors.ErrorPacket:
                 print("Error packet received")
-                raise custom_errors.ErrorPacket """
+                raise custom_errors.ErrorPacket
 
         if attempts == MAX_ATTEMPTS:
             raise custom_errors.WriteRequestNotAcknowledged
