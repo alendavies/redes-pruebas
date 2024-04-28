@@ -102,7 +102,7 @@ class ClientSide:
         return result
 
 
-    def _wait_write_req_ack(self) -> AckWriteRequest:
+    def _wait_write_req_ack(self) -> AckPacket:
         """
         Waits MAX_TIME for the acknowledgment of the write
         request, while ignoring any other packet received.
