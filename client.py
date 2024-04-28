@@ -29,14 +29,19 @@ def handle_read():
         print(e)
 
 
-while 1:
-    message = input("¿What do you want to do? [U]pload, [D]ownload, [E]xit: ")
-    if message == "U":
-        handle_write()
-    elif message == "D":
-        handle_read()
-    elif message == "E":
-        break
-    else:
-        print("Invalid option")
-        continue
+def main():
+
+    while True:
+        message = input("¿What do you want to do? [U]pload, [D]ownload, [E]xit: ")
+        if message == "U":
+            handle_write()
+        elif message == "D":
+            handle_read()
+        elif message == "E":
+            break
+        else:
+            print("Invalid option")
+            continue
+
+if __name__ == "__main__":
+    main()
