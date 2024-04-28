@@ -1,8 +1,10 @@
 from socket import *
 import time
 from config import *
+from file_service import FileService
 from packet import *
 from protocol import Connection
+import custom_errors
 
 class ServerConnection:
     """
@@ -12,7 +14,7 @@ class ServerConnection:
     def __init__(self, connection: Connection):
         self.connection = connection
 
-    def handle(self, packet):
+    def handle(self, packet: bytes):
         """
         Initiates the handling of an incoming message.
 
@@ -24,13 +26,15 @@ class ServerConnection:
         Returns... ¿algo?
         """
 
-        if isinstance(packet, WriteRequestPacket):
-            print("Received WRITE REQUEST packet")
-            self._handle_write_request(packet)
+        instance = MasterOfPackets.get_packet(packet)
 
-        elif isinstance(packet, ReadRequestPacket):
+        if isinstance(instance, WriteRequestPacket):
+            print("Received WRITE REQUEST packet")
+            self._handle_write_request(instance)
+
+        elif isinstance(instance, ReadRequestPacket):
             print("Received READ REQUEST packet")
-            self._handle_read_request(packet)
+            self._handle_read_request(instance)
 
         else:
             raise Exception("Unexpected packet type")
@@ -48,7 +52,19 @@ class ServerConnection:
 
         Returns... ¿algo?
         """
-        raise NotImplementedError
+        try:
+            file = FileService.get_file(request.filename)
+            print(file)
+        except:
+            raise Exception("File not found")
+
+        try:
+            print("sending file")
+            result = self.connection.send_file(file)
+            print("File sent")
+        except:
+            raise Exception("Error sending file")
+
 
     def _handle_write_request(self, request: WriteRequestPacket):
         """
@@ -62,19 +78,61 @@ class ServerConnection:
 
         Returns... ¿algo?
         """
-        raise NotImplementedError
+        attempts = 0
+        received = False
 
-# def handlePacketByType(packet, clientAddress, serverSocket):
-#
-#     packet = MasterOfPackets.get_packet(packet)
-#
-#     if isinstance(packet, WriteRequestPacket):
-#         print("Received WRITE REQUEST packet")
-#         handleWriteRequest(packet, clientAddress, serverSocket)
-#
-#     elif isinstance(packet, ReadRequestPacket):
-#         print("Received READ REQUEST packet")
-#         handleReadRequest(packet, clientAddress, serverSocket)
-#
-#     else:
-#         raise Exception("Unexpected packet type")
+        while attempts < MAX_ATTEMPTS and not received:
+
+            try:
+                print("Sent ACK")
+                self.connection.send_ACK(0)
+                print("Waiting for first data packet")
+                packet = self._wait_first_data_packet()
+
+                if isinstance(packet, DataPacket):
+                    received = True
+                    print("Received first data packet")
+
+            except custom_errors.Timeout:
+                attempts += 1
+                print("Timeout, resending ACK")
+
+        try:
+            print("Receiving file")
+            file = self.connection.receive_file(packet.get_block_number(), packet.get_data())
+            print(file)
+        except:
+            raise Exception("Error receiving file")
+
+
+    def _wait_first_data_packet(self) -> DataPacket:
+        """
+        Waits MAX_TIME for the acknowledgment of the read
+        request, while ignoring any other packet received.
+        """
+        start_time = time.time()
+
+        while True:
+            try:
+                packet, _ = self.connection.receive()
+                if isinstance(packet, DataPacket):
+                    if packet.get_block_number() == 0:
+                        print("Received first data packet")
+                        return packet
+
+                elif isinstance(packet, ErrorPacket):
+                    print("Received error packet")
+                    # TODO: narrow this exception, define protocol errors
+                    raise Exception
+
+                else:
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time >= TIMEOUT:
+                        print("Max time reached")
+                        break
+
+            except BlockingIOError:
+                pass
+
+        raise custom_errors.Timeout
+
