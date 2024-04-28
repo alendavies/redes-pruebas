@@ -140,30 +140,28 @@ class ErrorPacket:
         return b''.join([pack(self.FORMAT, self.type)])
 
     @classmethod
-    def deserialize(cls):
+    def deserialize(cls, packet: bytes):
         return cls()
 
     def __str__(self):
         return f"Type: Error"
 
-class BasePacket:
+class MasterOfPackets:
     FORMAT = "!H"
-    def __init__(self, packet_type):
+    def __init__(self, packet_type: Type):
         self.packet_type = packet_type.value
 
     @classmethod
     def create_packet_instance(cls, type: int, packet: bytes):
-        if type == Type.READ_REQUEST.value:
-            return ReadRequestPacket.deserialize(packet)
-        elif type == Type.WRITE_REQUEST.value:
-            return WriteRequestPacket.deserialize(packet)
-        elif type == Type.DATA.value:
-            return DataPacket.deserialize(packet) 
-        elif type == Type.ACKOWLEDGMENT.value:
-            return AckPacket.deserialize(packet)
-        elif type == Type.ERROR.value:
-            return ErrorPacket.deserialize()
-        else: raise Exception("Invalid packet type")
+        case = {
+                Type.READ_REQUEST.value: ReadRequestPacket,
+                Type.WRITE_REQUEST.value: WriteRequestPacket,
+                Type.DATA.value: DataPacket,
+                Type.ACKOWLEDGMENT.value: AckPacket,
+                Type.ERROR.value: ErrorPacket
+        }
+        return case[type].deserialize(packet)
+        # TODO: contemplar caso donde type no es válido
 
     @classmethod
     def get_packet(cls, packet: bytes):

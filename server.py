@@ -23,7 +23,7 @@ def handle_conection(packet, clientAddress, serverSocket):
 
 def handlePacketByType(packet, clientAddress, serverSocket):
 
-    packet = BasePacket.get_packet(packet)
+    packet = MasterOfPackets.get_packet(packet)
 
     if isinstance(packet, WriteRequestPacket):
         print("Received WRITE REQUEST packet")
@@ -51,7 +51,7 @@ def handleWriteRequest(req_packet: WriteRequestPacket, clientAddress, serverSock
     while True:
 
         packet, clientAddress = serverSocket.recvfrom(2048)
-        packet = BasePacket.get_packet(packet)
+        packet = MasterOfPackets.get_packet(packet)
 
         if isinstance(packet, DataPacket):
 
