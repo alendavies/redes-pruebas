@@ -14,9 +14,12 @@ def main():
 
     while True:
         packet, (ip, port) = serverSocket.recvfrom(2048)
+        print("Received packet from: ", ip, port)
+        print("Packet: ", packet)
         connection_protocol = StopAndWait(ip, port)
 
         try:
+            print("Handling request")
             ServerConnection(connection_protocol).handle(packet)
         except Exception as e:
             print(e)
