@@ -15,8 +15,6 @@ class ClientSide:
     def initiate_read_request(self, filename: str):
 
         packet_req = ReadRequestPacket(filename)
-        self.connection.send(packet_req.serialize())
-        print("Sent read request")
 
         attempts = 0
         received = False
@@ -26,6 +24,8 @@ class ClientSide:
             print("Attempt number: ", attempts)
 
             try:
+                print("Sent read request")
+                self.connection.send(packet_req.serialize())
                 print("Waiting for ack")
                 req_ack = self._wait_read_req_ack()
                 if isinstance(req_ack, DataPacket):
@@ -56,12 +56,10 @@ class ClientSide:
 
         return file
 
-    def initiate_write_request(self, bytes: bytes):
+    def initiate_write_request(self, file: bytes, filename):
 
         print("Initiating write request")
-        packet_req = WriteRequestPacket(bytes)
-        self.connection.send(packet_req.serialize())
-        print("Sent write request")
+        packet_req = WriteRequestPacket(filename)
 
         attempts = 0
         received = False
@@ -71,6 +69,8 @@ class ClientSide:
             print("Attempt number: ", attempts)
 
             try:
+                self.connection.send(packet_req.serialize())
+                print("Sent write request")
                 print("Waiting for ack")
                 req_ack = self._wait_write_req_ack()
                 if isinstance(req_ack, AckPacket):
@@ -92,7 +92,7 @@ class ClientSide:
         # having received the first packet.
 
         try:
-            result = self.connection.send_file(bytes)
+            result = self.connection.send_file(file)
 
         except Exception as e:
             # TODO: Acá manejar error
