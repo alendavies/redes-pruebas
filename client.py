@@ -2,13 +2,13 @@ from socket import *
 from client_side import ClientSide
 from file_service import FileService
 from packet import *
-from time import sleep
 from config import *
-from protocol import StopAndWait
+from stop_and_wait import StopAndWait
 
 connection_protocol = StopAndWait(SERVER_IP, SERVER_PORT)
 
 def handle_write():
+
     filename = input("Enter the path of the file to upload.")
     file = FileService.get_file(filename)
     print(file.decode())
