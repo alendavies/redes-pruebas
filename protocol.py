@@ -22,7 +22,6 @@ class Connection:
         Handles the sending side of the file transfer. Should
         guarantee reliable transfer, or throw.
         """
-        pass
 
     def send(self, packet: bytes):
         self.socket.sendto(packet, (self.ip, self.port))
@@ -40,5 +39,4 @@ class Connection:
         Handles the reception side of the file transfer. Should
         guarantee reliable reception, or throw.
         """
-        pass
 
