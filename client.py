@@ -14,7 +14,7 @@ def handle_write():
     print(file)
 
     try:
-        ClientSide(connection_protocol).initiate_write_request(file)
+        ClientSide(connection_protocol).initiate_write_request(file, filename)
     except Exception as e:
         print(e)
 

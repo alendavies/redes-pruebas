@@ -16,14 +16,14 @@ class Type(Enum):
 
 class ReadRequestPacket:
     FORMAT = "!H"
-    
+
     def __init__(self, filename: str):
         self.type = Type.READ_REQUEST.value
         self.data = filename
 
-    def serialize(self) -> bytes: 
+    def serialize(self) -> bytes:
         return b''.join([pack(self.FORMAT, self.type), self.data.encode()])
-    
+
     @classmethod
     def deserialize(cls, packet: bytes):
         return cls(packet[2:].decode())
@@ -34,7 +34,7 @@ class ReadRequestPacket:
 
 class WriteRequestPacket:
     FORMAT = "!H"
-    
+
     def __init__(self, filename: str):
         self.type = Type.WRITE_REQUEST.value
         self.data = filename
@@ -52,7 +52,7 @@ class WriteRequestPacket:
 
 class DataPacket:
     FORMAT = "!HH"
-    
+
     def __init__(self, block_number: int, data: bytes):
         self.type = Type.DATA.value
         self.block_number = block_number
@@ -101,7 +101,7 @@ class AckWriteRequest:
 
     def __init__(self):
         self.type = Type.ACK_WRITE_REQ.value
-    
+
     def serialize(self) -> bytes:
         return b''.join([pack(self.FORMAT, self.type)])
 
@@ -111,7 +111,7 @@ class AckWriteRequest:
 
 class AckPacket:
     FORMAT = "!HH"
-    
+
     def __init__(self, block_number: int):
         self.type = Type.ACKOWLEDGMENT.value
         self.block_number = block_number
@@ -132,7 +132,7 @@ class AckPacket:
 
 class ErrorPacket:
     FORMAT = "!H"
-    
+
     def __init__(self):
         self.type = Type.ERROR.value
 
@@ -152,7 +152,7 @@ class MasterOfPackets:
         self.packet_type = packet_type.value
 
     @classmethod
-    def create_packet_instance(cls, type: int, packet: bytes):
+    def _create_packet_instance(cls, type: int, packet: bytes):
         case = {
                 Type.READ_REQUEST.value: ReadRequestPacket,
                 Type.WRITE_REQUEST.value: WriteRequestPacket,
@@ -166,4 +166,4 @@ class MasterOfPackets:
     @classmethod
     def get_packet(cls, packet: bytes):
         packet_type = unpack(cls.FORMAT, packet[:2])[0]
-        return cls.create_packet_instance(packet_type, packet) 
+        return cls._create_packet_instance(packet_type, packet)

@@ -6,7 +6,7 @@ from socket import *
 class Connection:
     def __init__(self, ip: str, port: int):
         self.socket = socket(AF_INET, SOCK_DGRAM)
-        # bind?
+        self.socket.setblocking(False)
         self.ip = ip
         self.port = port
 
