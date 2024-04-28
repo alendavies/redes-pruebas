@@ -16,13 +16,21 @@ class ClientSide:
 
         packet_req = ReadRequestPacket(filename)
         self.connection.send(packet_req.serialize())
+        print("Sent read request")
 
         attempts = 0
+        received = False
 
-        while attempts <= MAX_ATTEMPTS:
+        while attempts <= MAX_ATTEMPTS and not received:
+
+            print("Attempt number: ", attempts)
 
             try:
+                print("Waiting for ack")
                 req_ack = self._wait_read_req_ack()
+                if isinstance(req_ack, DataPacket):
+                    received = True
+                    print("Received first data packet")
 
             except custom_errors.Timeout:
                 attempts+=1
@@ -50,15 +58,24 @@ class ClientSide:
 
     def initiate_write_request(self, bytes: bytes):
 
+        print("Initiating write request")
         packet_req = WriteRequestPacket(bytes)
         self.connection.send(packet_req.serialize())
+        print("Sent write request")
 
         attempts = 0
+        received = False
 
-        while attempts <= MAX_ATTEMPTS:
+        while attempts <= MAX_ATTEMPTS and not received:
+
+            print("Attempt number: ", attempts)
 
             try:
+                print("Waiting for ack")
                 req_ack = self._wait_write_req_ack()
+                if isinstance(req_ack, AckPacket):
+                    received = True
+                    print("Received ACK packet")
 
             except custom_errors.Timeout:
                 attempts+=1

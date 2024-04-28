@@ -9,9 +9,9 @@ connection_protocol = StopAndWait(SERVER_IP, SERVER_PORT)
 
 def handle_write():
 
-    filename = input("Enter the path of the file to upload.")
+    filename = input("Enter the path of the file to upload: ")
     file = FileService.get_file(filename)
-    print(file.decode())
+    print(file)
 
     try:
         ClientSide(connection_protocol).initiate_write_request(file)
@@ -20,7 +20,7 @@ def handle_write():
 
 
 def handle_read():
-    filename = input("Enter the name of the requested file.")
+    filename = input("Enter the name of the requested file: ")
 
     try:
         file = ClientSide(connection_protocol).initiate_read_request(filename)
