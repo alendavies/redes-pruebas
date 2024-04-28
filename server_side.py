@@ -12,7 +12,7 @@ class ServerConnection:
     def __init__(self, connection: Connection):
         self.connection = connection
 
-    def handle(self, incoming: bytes):
+    def handle(self, packet):
         """
         Initiates the handling of an incoming message.
 
@@ -23,14 +23,25 @@ class ServerConnection:
 
         Returns... ¿algo?
         """
-        raise NotImplementedError
+
+        if isinstance(packet, WriteRequestPacket):
+            print("Received WRITE REQUEST packet")
+            self._handle_write_request(packet)
+
+        elif isinstance(packet, ReadRequestPacket):
+            print("Received READ REQUEST packet")
+            self._handle_read_request(packet)
+
+        else:
+            raise Exception("Unexpected packet type")
+
 
     def _handle_read_request(self, request: ReadRequestPacket):
         """
         Handles the read request.
 
         Begins the transmission of the requested resource, \
-        if the request is valid. 
+        if the request is valid.
 
         Otherwise, it throws an appropiate error.
         # TODO: acá tenemos que manejar los casos (file not found...)
