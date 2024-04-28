@@ -11,3 +11,15 @@ class ReadRequestNotAcknowledged(Exception):
     """
     pass
 
+class WriteRequestNotAcknowledged(Exception):
+    """
+    Raised when the write request was not acknowledged.
+    """
+    pass
+
+class ErrorPacket(Exception):
+    """
+    Raised when an error packet is received.
+    """
+    pass
+
