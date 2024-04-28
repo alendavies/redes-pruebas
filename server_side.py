@@ -52,3 +52,18 @@ class ServerConnection:
         Returns... ¿algo?
         """
         raise NotImplementedError
+
+# def handlePacketByType(packet, clientAddress, serverSocket):
+#
+#     packet = MasterOfPackets.get_packet(packet)
+#
+#     if isinstance(packet, WriteRequestPacket):
+#         print("Received WRITE REQUEST packet")
+#         handleWriteRequest(packet, clientAddress, serverSocket)
+#
+#     elif isinstance(packet, ReadRequestPacket):
+#         print("Received READ REQUEST packet")
+#         handleReadRequest(packet, clientAddress, serverSocket)
+#
+#     else:
+#         raise Exception("Unexpected packet type")
