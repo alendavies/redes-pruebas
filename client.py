@@ -11,7 +11,6 @@ def handle_write():
 
     filename = input("Enter the path of the file to upload: ")
     file = FileService.get_file(filename)
-    print(file)
 
     try:
         ClientSide(connection_protocol).initiate_write_request(file, filename)

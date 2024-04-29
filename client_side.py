@@ -1,5 +1,6 @@
 from socket import *
 import time
+from logger import ClientSideLogger
 from packet import *
 from config import *
 from protocol import Connection
@@ -11,54 +12,61 @@ class ClientSide:
 
     def __init__(self, connection: Connection):
         self.connection = connection
+        self.logger = ClientSideLogger()
 
     def initiate_read_request(self, filename: str):
+
+        self.logger.debug("Initiating read request")
 
         packet_req = ReadRequestPacket(filename)
 
         attempts = 0
         received = False
+        req_ack = None
 
         while attempts <= MAX_ATTEMPTS and not received:
 
-            print("Attempt number: ", attempts)
+            self.logger.debug("Attempt number: " + str(attempts))
 
             try:
-                print("Sent read request")
-                self.connection.send(packet_req.serialize())
-                print("Waiting for ack")
+                self.connection.send(packet_req)
                 req_ack = self._wait_read_req_ack()
+
                 if isinstance(req_ack, DataPacket):
+                    self.logger.debug("Received first data packet")
                     received = True
-                    print("Received first data packet")
 
             except custom_errors.Timeout:
+                self.logger.warning("Read request timed out.")
                 attempts+=1
-                print("couldt connect with the server")
 
             except custom_errors.ErrorPacket:
-                print("Error packet received")
                 raise custom_errors.ErrorPacket
 
         if attempts == MAX_ATTEMPTS:
+            self.logger.error("Could not establish connection with the server.")
             raise custom_errors.ReadRequestNotAcknowledged
 
         # By this point, the read request is supposed to ack, by
         # having received the first packet.
+
+        if not req_ack:
+            self.logger.error("Request not acknowledged.")
+            raise Exception
 
         try:
             file = self.connection.receive_file(req_ack.get_block_number(), req_ack.get_data())
 
         except Exception as e:
             # TODO: Acá manejar error
-            print(e)
+            self.logger.error(e)
             raise Exception
 
         return file
 
     def initiate_write_request(self, file: bytes, filename):
 
-        print("Initiating write request")
+        self.logger.debug("Initiating write request")
         packet_req = WriteRequestPacket(filename)
 
         attempts = 0
@@ -66,29 +74,29 @@ class ClientSide:
 
         while attempts <= MAX_ATTEMPTS and not received:
 
-            print("Attempt number: ", attempts)
+            self.logger.debug("Attempt number: " + str(attempts))
 
             try:
-                self.connection.send(packet_req.serialize())
-                print("Sent write request")
-                print("Waiting for ack")
+                self.connection.send(packet_req)
                 req_ack = self._wait_write_req_ack()
+
                 if isinstance(req_ack, AckPacket):
+                    self.logger.debug("Received ackowledgement packet")
                     received = True
-                    print("Received ACK packet")
 
             except custom_errors.Timeout:
                 attempts+=1
-                print("couldt connect with the server")
+                self.logger.warning("Read request timed out.")
 
             except custom_errors.ErrorPacket:
                 print("Error packet received")
                 raise custom_errors.ErrorPacket
 
         if attempts == MAX_ATTEMPTS:
+            self.logger.error("Could not establish connection with the server.")
             raise custom_errors.WriteRequestNotAcknowledged
 
-        # By this point, the write request is supposed to ack, by
+        # By this point, the writr request is supposed to ack, by
         # having received the first packet.
 
         try:
@@ -96,7 +104,7 @@ class ClientSide:
 
         except Exception as e:
             # TODO: Acá manejar error
-            print(e)
+            self.logger.error(e)
             raise Exception
 
         return result
@@ -111,7 +119,8 @@ class ClientSide:
 
         while True:
             try:
-                packet, _ = self.connection.receive()
+                packet = self.connection.receive()
+
                 if isinstance(packet, AckPacket):
                     print("Received ACK packet")
                     return packet
@@ -142,7 +151,8 @@ class ClientSide:
 
         while True:
             try:
-                packet, _ = self.connection.receive()
+                packet = self.connection.receive()
+                
                 if isinstance(packet, DataPacket):
                     if packet.get_block_number() == 0:
                         print("Received first data packet")

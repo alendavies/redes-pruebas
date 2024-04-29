@@ -2,6 +2,7 @@ from socket import *
 import time
 from config import *
 from file_service import FileService
+from logger import PacketLogger
 from packet import *
 from protocol import Connection
 import custom_errors
@@ -13,6 +14,7 @@ class ServerConnection:
 
     def __init__(self, connection: Connection):
         self.connection = connection
+        self.logger = PacketLogger()
 
     def handle(self, packet: bytes):
         """
@@ -29,11 +31,11 @@ class ServerConnection:
         instance = MasterOfPackets.get_packet(packet)
 
         if isinstance(instance, WriteRequestPacket):
-            print("Received WRITE REQUEST packet")
+            self.logger.debug("Received write request for file: " + instance.get_filename())
             self._handle_write_request(instance)
 
         elif isinstance(instance, ReadRequestPacket):
-            print("Received READ REQUEST packet")
+            self.logger.debug("Received read request for file: " + instance.get_filename())
             self._handle_read_request(instance)
 
         else:
@@ -53,8 +55,7 @@ class ServerConnection:
         Returns... ¿algo?
         """
         try:
-            file = FileService.get_file(request.filename)
-            print(file)
+            file = FileService.get_file(request.get_filename())
         except:
             raise Exception("File not found")
 
@@ -84,7 +85,6 @@ class ServerConnection:
         while attempts < MAX_ATTEMPTS and not received:
 
             try:
-                print("Sent ACK")
                 self.connection.send_ACK(0)
                 print("Waiting for first data packet")
                 packet = self._wait_first_data_packet()
@@ -114,7 +114,8 @@ class ServerConnection:
 
         while True:
             try:
-                packet, _ = self.connection.receive()
+                packet = self.connection.receive()
+
                 if isinstance(packet, DataPacket):
                     if packet.get_block_number() == 0:
                         print("Received first data packet")

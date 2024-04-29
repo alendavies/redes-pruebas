@@ -1,5 +1,7 @@
+from abc import abstractmethod
 from enum import Enum
 from struct import pack, unpack
+from typing import LiteralString, Self
 
 from config import PACKET_SIZE
 
@@ -14,7 +16,22 @@ class Type(Enum):
 
 # TODO: rename "deserialize" to "create_from_bytes"
 
-class ReadRequestPacket:
+class BasePacket:
+
+    @abstractmethod
+    def serialize(cls) -> bytes:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, packet: bytes) -> Self:
+        pass
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
+class ReadRequestPacket(BasePacket):
     FORMAT = "!H"
 
     def __init__(self, filename: str):
@@ -28,11 +45,14 @@ class ReadRequestPacket:
     def deserialize(cls, packet: bytes):
         return cls(packet[2:].decode())
 
+    def get_filename(self):
+        return self.data
+
     def __str__(self):
         return f"Type: Read Request, Filename: {self.data}"
 
 
-class WriteRequestPacket:
+class WriteRequestPacket(BasePacket):
     FORMAT = "!H"
 
     def __init__(self, filename: str):
@@ -46,11 +66,14 @@ class WriteRequestPacket:
     def deserialize(cls, packet: bytes):
         return cls(packet[2:].decode())
 
+    def get_filename(self):
+        return self.data
+
     def __str__(self):
         return f"Type: Write Request, Filename: {self.data}"
 
 
-class DataPacket:
+class DataPacket(BasePacket):
     FORMAT = "!HH"
 
     def __init__(self, block_number: int, data: bytes):
@@ -80,7 +103,7 @@ class DataPacket:
     def __str__(self):
         return f"Type: Data, Block Number: #{self.block_number}, Data: {self.data}"
 
-class AckReadRequest:
+class AckReadRequest(BasePacket):
     FORMAT = "!HH"
 
     def __init__(self, file_size: int):
@@ -96,7 +119,7 @@ class AckReadRequest:
 
 # TODO: chequear nombre de archivo, espacio dispnible, etc
 
-class AckWriteRequest:
+class AckWriteRequest(BasePacket):
     FORMAT = "!HH"
 
     def __init__(self):
@@ -106,10 +129,10 @@ class AckWriteRequest:
         return b''.join([pack(self.FORMAT, self.type)])
 
     @classmethod
-    def deserialize(cls):
+    def deserialize(cls, packet: bytes):
         return cls()
 
-class AckPacket:
+class AckPacket(BasePacket):
     FORMAT = "!HH"
 
     def __init__(self, block_number: int):
@@ -130,7 +153,7 @@ class AckPacket:
         return f"Type: Ack, Block Number: #{self.block_number}"
 
 
-class ErrorPacket:
+class ErrorPacket(BasePacket):
     FORMAT = "!H"
 
     def __init__(self):
@@ -145,6 +168,7 @@ class ErrorPacket:
 
     def __str__(self):
         return f"Type: Error"
+
 
 class MasterOfPackets:
     FORMAT = "!H"
@@ -164,6 +188,6 @@ class MasterOfPackets:
         # TODO: contemplar caso donde type no es válido
 
     @classmethod
-    def get_packet(cls, packet: bytes):
+    def get_packet(cls, packet: bytes) -> BasePacket:
         packet_type = unpack(cls.FORMAT, packet[:2])[0]
         return cls._create_packet_instance(packet_type, packet)

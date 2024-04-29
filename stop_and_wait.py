@@ -17,16 +17,16 @@ class StopAndWait(Connection):
         while True:
 
             try:
-                packet, _ = self.receive()
+                packet = self.receive()
+
                 if isinstance(packet, AckPacket):
                     if packet.get_block_number() == bloqnum:
-                        print("Received ACK packet")
                         return bloqnum+1
                 else:
                     # Verificar si se ha excedido el tiempo máximo de espera
                     elapsed_time = time.time() - start_time
                     if elapsed_time >= TIMEOUT:
-                        print("Tiempo de espera excedido")
+                        self.logger.warning("Timed out")
                         break
             except BlockingIOError as e:
                 pass
@@ -35,7 +35,15 @@ class StopAndWait(Connection):
 
     def send_file(self, message: bytes) -> bool:
 
-        data = bytearray(message)
+        self.logger.debug("Beggining file transfer")
+
+        try:
+            # data = bytearray(message)
+            print(message)
+            data = message.decode()
+        except Exception as e:
+            self.logger.error(e)
+            return False
 
         bloqnum = 0
         es_ultimo = False
@@ -53,7 +61,6 @@ class StopAndWait(Connection):
 
             data_packet = DataPacket(bloqnum, chunk)
             self.socket.send(data_packet.serialize())
-            print("DATA packet sent")
 
             prev_bloqnum = bloqnum
 
@@ -65,11 +72,11 @@ class StopAndWait(Connection):
                 attempts = 0
 
         if es_ultimo == True:
-            print("Final packet sent")
+            self.logger.debug("Sent last packet")
             return True
 
         if attempts == MAX_ATTEMPTS:
-            print("Max attempts reached")
+            self.logger.error("Max attempts reached")
             # acá debería raise, not true / false
             return False
 
@@ -81,8 +88,7 @@ class StopAndWait(Connection):
 
         while True:
 
-            packet, _ = self.receive()
-            packet = MasterOfPackets.get_packet(packet)
+            packet = self.receive()
 
             if isinstance(packet, DataPacket):
 

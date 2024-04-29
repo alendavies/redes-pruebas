@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from config import *
+from logger import PacketLogger
 from packet import *
 from socket import *
 
@@ -9,6 +10,7 @@ class Connection:
         self.socket.setblocking(False)
         self.ip = ip
         self.port = port
+        self.logger = PacketLogger()
 
     def close(self):
         self.socket.close()
@@ -23,15 +25,20 @@ class Connection:
         guarantee reliable transfer, or throw.
         """
 
-    def send(self, packet: bytes):
-        self.socket.sendto(packet, (self.ip, self.port))
+    def send(self, packet: BasePacket):
+        self.socket.sendto(packet.serialize(), (self.ip, self.port))
+        self.logger.debug("sent packet: " + packet.__str__())
 
-    def receive(self):
-        return self.socket.recvfrom(SOCKET_SIZE)
+    def receive(self) -> BasePacket:
+        message, _ = self.socket.recvfrom(SOCKET_SIZE)
+        packet = MasterOfPackets.get_packet(message)
+        self.logger.debug("received packet: " + packet.__str__())
 
-    def send_ACK(self, bloqnum):
+        return packet
+
+    def send_ACK(self, bloqnum: int):
         ack_packet = AckPacket(bloqnum)
-        self.socket.sendto(ack_packet.serialize(), (SERVER_IP, SERVER_PORT))
+        self.send(ack_packet)
 
     @abstractmethod
     def receive_file(self, initial_bloqnum = 0, initial_data = b'') -> bytes:
