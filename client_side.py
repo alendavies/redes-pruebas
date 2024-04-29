@@ -24,7 +24,7 @@ class ClientSide:
         received = False
         req_ack = None
 
-        while attempts <= MAX_ATTEMPTS and not received:
+        while attempts <= MAX_ATTEMPTS and received == False:
 
             self.logger.debug("Attempt number: " + str(attempts))
 
@@ -72,7 +72,7 @@ class ClientSide:
         attempts = 0
         received = False
 
-        while attempts <= MAX_ATTEMPTS and not received:
+        while attempts <= MAX_ATTEMPTS and received == False:
 
             self.logger.debug("Attempt number: " + str(attempts))
 
@@ -119,10 +119,12 @@ class ClientSide:
 
         while True:
             try:
-                packet = self.connection.receive()
+                packet, server_addr = self.connection.receive()
 
                 if isinstance(packet, AckPacket):
                     print("Received ACK packet")
+                    self.connection.ip = server_addr[0]
+                    self.connection.port = server_addr[1]
                     return packet
 
                 elif isinstance(packet, ErrorPacket):
@@ -130,15 +132,14 @@ class ClientSide:
                     # TODO: narrow this exception, define protocol errors
                     raise Exception
 
-                else:
-                    elapsed_time = time.time() - start_time
-                    if elapsed_time >= TIMEOUT:
-                        print("Max time reached")
-                        # TODO: throw
-                        break
-
             except BlockingIOError:
                 pass
+
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= TIMEOUT:
+                print("Max time reached")
+                # TODO: throw
+                break
 
         raise custom_errors.Timeout
 
@@ -151,11 +152,13 @@ class ClientSide:
 
         while True:
             try:
-                packet = self.connection.receive()
-                
+                packet, server_addr = self.connection.receive()
+
                 if isinstance(packet, DataPacket):
                     if packet.get_block_number() == 0:
                         print("Received first data packet")
+                        self.connection.ip = server_addr[0]
+                        self.connection.port = server_addr[1]
                         return packet
 
                 elif isinstance(packet, ErrorPacket):
@@ -163,13 +166,12 @@ class ClientSide:
                     # TODO: narrow this exception, define protocol errors
                     raise Exception
 
-                else:
-                    elapsed_time = time.time() - start_time
-                    if elapsed_time >= TIMEOUT:
-                        print("Max time reached")
-                        break
-
             except BlockingIOError:
                 pass
+
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= TIMEOUT:
+                print("Max time reached")
+                break
 
         raise custom_errors.Timeout
