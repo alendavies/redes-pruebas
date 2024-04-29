@@ -1,3 +1,4 @@
+from http import client
 from socket import *
 import time
 from config import *
@@ -82,7 +83,7 @@ class ServerConnection:
         attempts = 0
         received = False
 
-        while attempts < MAX_ATTEMPTS and not received:
+        while attempts < MAX_ATTEMPTS and received == False:
 
             try:
                 self.connection.send_ACK(0)
@@ -90,8 +91,8 @@ class ServerConnection:
                 packet = self._wait_first_data_packet()
 
                 if isinstance(packet, DataPacket):
-                    received = True
                     print("Received first data packet")
+                    received = True
 
             except custom_errors.Timeout:
                 attempts += 1
@@ -114,7 +115,8 @@ class ServerConnection:
 
         while True:
             try:
-                packet = self.connection.receive()
+                packet, _ = self.connection.receive()
+                print("Received packet: ", packet)
 
                 if isinstance(packet, DataPacket):
                     if packet.get_block_number() == 0:
@@ -126,14 +128,13 @@ class ServerConnection:
                     # TODO: narrow this exception, define protocol errors
                     raise Exception
 
-                else:
-                    elapsed_time = time.time() - start_time
-                    if elapsed_time >= TIMEOUT:
-                        print("Max time reached")
-                        break
-
             except BlockingIOError:
                 pass
+
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= TIMEOUT:
+                print("Max time reached")
+                break
 
         raise custom_errors.Timeout
 

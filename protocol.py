@@ -7,7 +7,6 @@ from socket import *
 class Connection:
     def __init__(self, ip: str, port: int):
         self.socket = socket(AF_INET, SOCK_DGRAM)
-        self.socket.setblocking(False)
         self.ip = ip
         self.port = port
         self.logger = PacketLogger()
@@ -29,12 +28,13 @@ class Connection:
         self.socket.sendto(packet.serialize(), (self.ip, self.port))
         self.logger.debug("sent packet: " + packet.__str__())
 
-    def receive(self) -> BasePacket:
-        message, _ = self.socket.recvfrom(SOCKET_SIZE)
+    def receive(self) -> tuple[BasePacket, tuple[str, int]]:
+        self.socket.setblocking(0)
+        message, server_addr = self.socket.recvfrom(SOCKET_SIZE)
         packet = MasterOfPackets.get_packet(message)
         self.logger.debug("received packet: " + packet.__str__())
 
-        return packet
+        return packet, server_addr
 
     def send_ACK(self, bloqnum: int):
         ack_packet = AckPacket(bloqnum)

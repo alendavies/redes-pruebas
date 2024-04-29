@@ -17,19 +17,20 @@ class StopAndWait(Connection):
         while True:
 
             try:
-                packet = self.receive()
+                packet, _ = self.receive()
+                print("Received packet: ", packet)
 
                 if isinstance(packet, AckPacket):
                     if packet.get_block_number() == bloqnum:
                         return bloqnum+1
-                else:
-                    # Verificar si se ha excedido el tiempo máximo de espera
-                    elapsed_time = time.time() - start_time
-                    if elapsed_time >= TIMEOUT:
-                        self.logger.warning("Timed out")
-                        break
+
             except BlockingIOError as e:
                 pass
+
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= TIMEOUT:
+                self.logger.warning("Timed out")
+                break
 
         return bloqnum
 
@@ -39,9 +40,10 @@ class StopAndWait(Connection):
 
         try:
             # data = bytearray(message)
-            print(message)
-            data = message.decode()
+            data = message
+
         except Exception as e:
+            print("Error decoding message")
             self.logger.error(e)
             return False
 
@@ -58,9 +60,9 @@ class StopAndWait(Connection):
 
             else:
                 chunk = data[bloqnum*PACKET_SIZE:(bloqnum+1) * PACKET_SIZE]
-
             data_packet = DataPacket(bloqnum, chunk)
-            self.socket.send(data_packet.serialize())
+            print("sending chunk: ", chunk)
+            self.send(data_packet)
 
             prev_bloqnum = bloqnum
 
@@ -86,11 +88,16 @@ class StopAndWait(Connection):
 
         bufer: list[bytes] = []
 
+        self.send_ACK(initial_bloqnum)
+
         while True:
 
-            packet = self.receive()
+            packet, _ = self.receive()
 
-            if isinstance(packet, DataPacket):
+            if packet.get_block_number() == initial_bloqnum:
+                self.send_ACK(initial_bloqnum)
+
+            elif isinstance(packet, DataPacket):
 
                 print("Received DATA packet: ", packet)
 
