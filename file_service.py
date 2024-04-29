@@ -8,9 +8,9 @@ class FileService:
         """
         Getea un archivo.
         """
-        file = "Lorem ipsum dolor sit amet, consectetur adisciping elit."
+        file = str("Lorem ipsum dolor sit amet, consectetur adisciping elit.")
 
-        return file
+        return file.encode()
 
     def save_file(self, filename: str):
         """
