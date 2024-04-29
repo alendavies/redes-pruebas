@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from enum import Enum
 from struct import pack, unpack
-from typing import LiteralString, Self
+from typing import Self
 
 from config import PACKET_SIZE
 
@@ -19,7 +19,7 @@ class Type(Enum):
 class BasePacket:
 
     @abstractmethod
-    def serialize(cls) -> bytes:
+    def serialize(self) -> bytes:
         pass
 
     @classmethod
