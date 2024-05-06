@@ -11,8 +11,13 @@ class Server(ProtocolServer):
         super().__init__(connection, file_service)
 
     def _handle_upload(self, packet: UploadRequestPacket):
+        # send ack0 and wait for first data
+        # process first data
+        # continue receiving data
         raise NotImplementedError("Not implemented.")
 
     def _handle_download(self, packet: DownloadRequestPacket):
+        # get file
+        # transmit file
         raise NotImplementedError("Not implemented.")
 

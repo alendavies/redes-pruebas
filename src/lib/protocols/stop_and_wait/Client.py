@@ -16,16 +16,20 @@ class Client(ProtocolClient):
 
     def upload(self, filename: str):
        
-        # Send upload request.
-        req_packet = UploadRequestPacket(filename)
+        # Try to get file. Send ERROR and raise if fails.
         file = self.file_service.get_file(filename) # TODO: add file exceptions
         data = bytearray(file)
+
+        # Send request and wait for ack0.
+        req_packet = UploadRequestPacket(filename)
 
         try:
             self._send_write_req_and_wait_for_ack0(req_packet)
         except Exception as e:
             self.logger.error(e)
             raise Exception("Couldn't connect to the server.")
+
+        # Receive file.
 
         bloqnum = 1
         es_ultimo = False
