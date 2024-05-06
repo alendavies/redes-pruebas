@@ -1,5 +1,6 @@
 from lib.Connection import Connection
 from lib.FileService import FileService
+from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.protocols.ProtocolClient import ProtocolClient
 from lib.packets.AckPacket import AckPacket
@@ -24,6 +25,7 @@ class Client(ProtocolClient):
             self._send_write_req_and_wait_for_ack0(req_packet)
         except Exception as e:
             self.logger.error(e)
+            raise Exception("Couldn't connect to the server.")
 
         bloqnum = 1
         es_ultimo = False
@@ -49,7 +51,100 @@ class Client(ProtocolClient):
             bloqnum += 1
 
     def download(self, filename: str):
-        raise NotImplementedError
+        data = bytearray()
+        
+        req_packet = DownloadRequestPacket(filename)
+
+        try:
+            data_1 = self._send_read_req_and_wait_for_first_data_block(req_packet)
+            data.extend(data_1.get_data())
+        except Exception as e:
+            self.logger.error(e)
+
+        bloqnum = 1
+
+        es_ultimo = False
+
+        # TODO: timers and attempts
+
+        while not es_ultimo:
+
+            try:
+                ack_packet = AckPacket(bloqnum)
+                data_packet = self._send_ack_and_wait_for_data_packet(ack_packet)
+
+                data.extend(data_packet.get_data())
+
+            except Exception as e:
+                self.logger.error(f"Error con paquete: {e}")
+                break
+
+            if data_packet.is_final_packet():
+                es_ultimo = True
+                self.logger.debug("That was the last packet.")
+                # TODO: esperar un timeout por si no llega el ack
+                self.connection.send(AckPacket(data_packet.get_block_number()))
+                print("Data received: ", data)
+
+            bloqnum += 1
+
+        self.file_service.save_file(filename, data)
+
+    def _send_ack_and_wait_for_data_packet(self, ack_packet: AckPacket, timeout = 2) -> DataPacket:
+        """
+        Sends an `AckPacket` for the `expected_bloqnum` and \
+        waits `timeout` seconds for the data packet with \
+        `expected_bloqnum`.
+        Returns the `DataPacket` with said `expected_bloqnum`. MAL, es más uno! Corregir descripción!
+        Otherwise, raises a Timeout exception.
+        TODO: manejar EOF
+        """
+        start_time = time.time()
+
+        self.connection.send(ack_packet)
+
+        while True:
+            try:
+                packet, _ = self.connection.receive()
+
+                if isinstance(packet, DataPacket):
+                    if packet.get_block_number() == ack_packet.get_block_number() + 1:
+                        return packet
+
+                # TODO: check for error pacekt
+            except BlockingIOError:
+                pass
+
+            elapsed_time = time.time() - start_time
+
+            if elapsed_time >= timeout:
+                self.logger.warning("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number())))
+                raise TimeoutError("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number())))
+
+    def _send_read_req_and_wait_for_first_data_block(self, \
+        rdq_packet: DownloadRequestPacket) -> DataPacket:
+        
+        start_time = time.time()
+        self.connection.send(rdq_packet)
+
+        while True:
+            try:
+                packet, server_addr = self.connection.receive()
+
+                if isinstance(packet, DataPacket):
+                    if packet.get_block_number() == 1:
+                        self.connection.ip = server_addr[0]
+                        self.connection.port = server_addr[1]
+                        return packet
+
+            except BlockingIOError:
+                pass
+
+            elapsed_time = time.time() - start_time
+
+            if elapsed_time >= 2:
+                self.logger.warning("Timeout: first data block not received.")
+                raise TimeoutError
 
 
     def _send_write_req_and_wait_for_ack0(self, \

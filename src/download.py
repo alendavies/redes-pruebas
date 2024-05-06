@@ -87,7 +87,7 @@ def main():
 
     connection_protocol: ProtocolClient 
     connection = Connection(args.host, args.port)
-    file_service = FileService()
+    file_service = FileService('./files/client_root/')
     logger = ServerSideLogger()
 
     if args.stwa:
@@ -103,8 +103,9 @@ def main():
     try:
         logger.info("Handling download request for file: " + args.name)
         connection_protocol.download(args.name)
+        logger.success("Completed download of {}.".format(args.name))
     except Exception as e:
-        raise e
+        logger.error(e)
 
 if __name__ == "__main__":
     main()

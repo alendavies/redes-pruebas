@@ -109,7 +109,7 @@ def main():
             
         connection_protocol: ProtocolServer
         connection = Connection(ip, port)
-        file_service = FileService()
+        file_service = FileService('./files/server_root/')
 
         if args.stwa:
             connection_protocol = StopAndWait(connection, file_service)

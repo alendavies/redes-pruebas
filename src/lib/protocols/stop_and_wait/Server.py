@@ -30,9 +30,8 @@ class Server(ProtocolServer):
 
                 data.extend(data_packet.get_data())
 
-            except Exception as e:
-                self.logger.error(f"Error con paquete: {e}")
-                break
+            except TimeoutError as e:
+                raise Exception("Packet timed out, exiting.")
 
             if data_packet.is_final_packet():
                 es_ultimo = True
@@ -95,14 +94,14 @@ class Server(ProtocolServer):
                 chunk = data[chunk_size:chunk_size+PACKET_SIZE]
 
             try:
-                ack_packet = self._send_data_packet_and_wait_for_ack(chunk)
+                ack_packet = self._send_data_packet_and_wait_for_ack(DataPacket(bloqnum, chunk))
             except Exception as e:
-                self.logger.error("Timeout: ack not received ", e)
+                self.logger.error("Timeout: ack not received {}".format(e))
                 break
 
             bloqnum += 1
 
-    def _send_data_packet_and_wait_for_ack(self, data_packet: DataPacket, timeout = TIMEOUT) -> AckPacket:
+    def _send_data_packet_and_wait_for_ack(self, data_packet: DataPacket, timeout = 2) -> AckPacket:
         """
         Waits `timeout` seconds for the ackowledgement of the \
         `bloqnum` packet.
@@ -111,11 +110,11 @@ class Server(ProtocolServer):
         """
         start_time = time.time()
 
-        self.send(data_packet)
+        self.connection.send(data_packet)
 
         while True:
             try:
-                packet, _ = self.receive()
+                packet, _ = self.connection.receive()
 
                 if isinstance(packet, AckPacket):
                     if packet.get_block_number() == data_packet.get_block_number():

@@ -20,17 +20,23 @@ class ProtocolServer:
 
         if isinstance(instance, DownloadRequestPacket):
             self.logger.info("Handling download request for file: " + instance.get_filename())
-            # TODO: try except
-            self._handle_download(instance)
+            try:
+                self._handle_download(instance)
+                self.logger.success("Download successful.")
+            except Exception as e:
+                self.logger.error("Error handling download request: " + str(e))
 
         elif isinstance(instance, UploadRequestPacket):
             self.logger.info("Handling upload request for file: " + instance.get_filename())
-            # TODO: try except
-            self._handle_upload(instance)
+            try:
+                self._handle_upload(instance)
+                self.logger.success("Upload successful.")
+            except Exception as e:
+                self.logger.error("Error handling upload request: " + str(e))
 
         else:
-            # self.logger.error("Unexpected packet type")
-            raise Exception("Unexpected packet type")
+            self.logger.error("Unexpected request.")
+            raise Exception("Unexpected request.")
         pass
 
     @abstractmethod
