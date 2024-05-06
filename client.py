@@ -13,7 +13,7 @@ def handle_write():
     file = FileService.get_file(filename)
 
     try:
-        ClientSide(connection_protocol).initiate_write_request(file, filename)
+            ClientSide(connection_protocol).initiate_write_request(file.get_data(), file.get_filename())
     except Exception as e:
         print(e)
 

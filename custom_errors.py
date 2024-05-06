@@ -23,3 +23,8 @@ class ErrorPacket(Exception):
     """
     pass
 
+class UnknownPacketType(Exception):
+    """
+    Raised when an unknown packet type is received.
+    """
+    pass

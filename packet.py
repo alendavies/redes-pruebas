@@ -2,6 +2,7 @@ from abc import abstractmethod
 from enum import Enum
 from struct import pack, unpack
 from typing import Self
+import custom_errors
 
 from config import PACKET_SIZE
 
@@ -117,10 +118,13 @@ class AckReadRequest(BasePacket):
     def deserialize(cls, packet: bytes):
         return cls(unpack(cls.FORMAT, packet)[1])
 
+    def __str__(self):
+        return f"Type: AckReadReq, File Size: {self.file_size}"
+
 # TODO: chequear nombre de archivo, espacio dispnible, etc
 
 class AckWriteRequest(BasePacket):
-    FORMAT = "!HH"
+    FORMAT = "!H"
 
     def __init__(self):
         self.type = Type.ACK_WRITE_REQ.value
@@ -131,6 +135,9 @@ class AckWriteRequest(BasePacket):
     @classmethod
     def deserialize(cls, packet: bytes):
         return cls()
+    
+    def __str__(self):
+        return f"Type: AckWriteReq"
 
 class AckPacket(BasePacket):
     FORMAT = "!HH"
@@ -176,16 +183,20 @@ class MasterOfPackets:
         self.packet_type = packet_type.value
 
     @classmethod
-    def _create_packet_instance(cls, type: int, packet: bytes):
+    def _create_packet_instance(cls, type: int, packet: bytes) -> BasePacket:
         case = {
                 Type.READ_REQUEST.value: ReadRequestPacket,
                 Type.WRITE_REQUEST.value: WriteRequestPacket,
                 Type.DATA.value: DataPacket,
                 Type.ACKOWLEDGMENT.value: AckPacket,
-                Type.ERROR.value: ErrorPacket
+                Type.ERROR.value: ErrorPacket,
+                Type.ACK_READ_REQ.value: AckReadRequest,
+                Type.ACK_WRITE_REQ.value: AckWriteRequest
         }
-        return case[type].deserialize(packet)
-        # TODO: contemplar caso donde type no es válido
+        try:
+            return case[type].deserialize(packet)
+        except Exception:
+            raise custom_errors.UnknownPacketType
 
     @classmethod
     def get_packet(cls, packet: bytes) -> BasePacket:

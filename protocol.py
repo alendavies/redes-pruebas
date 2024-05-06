@@ -18,7 +18,7 @@ class Connection:
         return self.socket
 
     @abstractmethod
-    def send_file(self, message: bytes) -> bool:
+    def send_file(self, data: bytes):
         """
         Handles the sending side of the file transfer. Should
         guarantee reliable transfer, or throw.
@@ -29,10 +29,16 @@ class Connection:
         self.logger.debug("sent packet: " + packet.__str__())
 
     def receive(self) -> tuple[BasePacket, tuple[str, int]]:
-        self.socket.setblocking(0)
+        self.socket.setblocking(False)
         message, server_addr = self.socket.recvfrom(SOCKET_SIZE)
-        packet = MasterOfPackets.get_packet(message)
-        self.logger.debug("received packet: " + packet.__str__())
+
+        try:
+            packet = MasterOfPackets.get_packet(message)
+        except custom_errors.UnknownPacketType:
+            self.logger.error("Invalid packet type.")
+            raise custom_errors.UnknownPacketType
+
+        self.logger.debug("received packet from {ip}:{port}: {message}".format(ip=server_addr[0], port=server_addr[1], message=packet.__str__()))
 
         return packet, server_addr
 
@@ -41,7 +47,7 @@ class Connection:
         self.send(ack_packet)
 
     @abstractmethod
-    def receive_file(self, initial_bloqnum = 0, initial_data = b'') -> bytes:
+    def receive_file(self, initial_bloqnum = 0) -> bytes:
         """
         Handles the reception side of the file transfer. Should
         guarantee reliable reception, or throw.
