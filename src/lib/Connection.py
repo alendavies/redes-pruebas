@@ -16,8 +16,8 @@ class Connection:
         self.socket.sendto(packet.serialize(), (self.ip, self.port))
         self.logger.on_packet_sent(packet)
 
-    def receive(self) -> tuple[BasePacket, tuple[str, int]]:
-        self.socket.setblocking(False)
+    def receive(self, blocking: bool = False) -> tuple[BasePacket, tuple[str, int]]:
+        self.socket.setblocking(blocking)
         message, server_addr = self.socket.recvfrom(self.SOCKET_SIZE)
 
         try:

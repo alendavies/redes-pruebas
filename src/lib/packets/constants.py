@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-PACKET_SIZE = 512
+PACKET_SIZE = 10
 
 
 class Type(IntEnum):

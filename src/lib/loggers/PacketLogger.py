@@ -13,10 +13,10 @@ class PacketLogger(BaseLogger):
         super().__init__("Packet")
 
     def on_packet_sent(self, packet: BasePacket):
-        self.debug(packet.__str__())
+        self.debug("[SENT] {}".format(packet.__str__()))
 
     def on_packet_received(self, packet: BasePacket):
-        self.debug(packet.__str__())
+        self.debug("[RECEIVED] {}".format(packet.__str__()))
 
     def on_upload_request_sent(self, packet: UploadRequestPacket):
         pass
