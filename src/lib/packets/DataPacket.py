@@ -1,7 +1,7 @@
 from struct import pack, unpack
 
-from BasePacket import BasePacket
-from constants import PACKET_SIZE, Type
+from .BasePacket import BasePacket
+from .constants import PACKET_SIZE, Type
 
 
 class DataPacket(BasePacket):

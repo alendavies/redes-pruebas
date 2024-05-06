@@ -1,7 +1,7 @@
 from struct import pack, unpack
 
-from BasePacket import BasePacket
-from constants import Type
+from .BasePacket import BasePacket
+from .constants import Type
 
 
 class AckPacket(BasePacket):

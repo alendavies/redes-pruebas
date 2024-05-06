@@ -1,13 +1,12 @@
 from struct import unpack
+from .DownloadRequestPacket import DownloadRequestPacket
+from .UploadRequestPacket import UploadRequestPacket
+from .AckPacket import AckPacket
+from .DataPacket import DataPacket
+from .ErrorPacket import ErrorPacket
+from .BasePacket import BasePacket
 
-from AckPacket import AckPacket
-from BasePacket import BasePacket
-from constants import Type
-from DataPacket import DataPacket
-from ErrorPacket import ErrorPacket
-
-from src.lib.packet.DownloadRequestPacket import DownloadRequestPacket
-from src.lib.packet.UploadRequestPacket import UploadRequestPacket
+from .constants import Type
 
 
 class PacketParser:
