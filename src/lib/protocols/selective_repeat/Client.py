@@ -11,7 +11,7 @@ class Client(ProtocolClient):
         super().__init__(connection, file_service)
 
     def upload(self, filename: str):
-        raise NotImplementedError
+        raise NotImplementedError("Not implemented.")
 
     def download(self, filename: str):
-        raise NotImplementedError
+        raise NotImplementedError("Not implemented.")

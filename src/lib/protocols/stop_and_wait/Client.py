@@ -18,7 +18,7 @@ class Client(ProtocolClient):
        
         # Send upload request.
         req_packet = UploadRequestPacket(filename)
-        file = self.file_service.get_file(filename)
+        file = self.file_service.get_file(filename) # TODO: add file exceptions
         data = bytearray(file)
 
         try:
@@ -60,6 +60,7 @@ class Client(ProtocolClient):
             data.extend(data_1.get_data())
         except Exception as e:
             self.logger.error(e)
+            raise Exception("Couldn't connect to the server.")
 
         bloqnum = 1
 

@@ -11,8 +11,8 @@ class Server(ProtocolServer):
         super().__init__(connection, file_service)
 
     def _handle_upload(self, packet: UploadRequestPacket):
-        pass
+        raise NotImplementedError("Not implemented.")
 
     def _handle_download(self, packet: DownloadRequestPacket):
-        pass
+        raise NotImplementedError("Not implemented.")
 

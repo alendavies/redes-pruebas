@@ -1,6 +1,7 @@
 
 import argparse
 from lib.FileService import FileService
+from lib.loggers.ClientSideLogger import ClientSideLogger
 from lib.loggers.ServerSideLogger import ServerSideLogger
 from lib.protocols.stop_and_wait.Client import Client as StopAndWait
 from lib.protocols.selective_repeat.Client import Client as SelectiveRepeat
@@ -88,7 +89,7 @@ def main():
     connection_protocol: ProtocolClient 
     connection = Connection(args.host, args.port)
     file_service = FileService('./files/client_root/')
-    logger = ServerSideLogger()
+    logger = ClientSideLogger() 
 
     if args.stwa:
         connection_protocol = StopAndWait(connection, file_service)
