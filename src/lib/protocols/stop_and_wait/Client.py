@@ -1,12 +1,13 @@
+import time
+
 from lib.Connection import Connection
 from lib.FileService import ClientFileService
+from lib.packets.AckPacket import AckPacket
+from lib.packets.constants import PACKET_SIZE
+from lib.packets.DataPacket import DataPacket
 from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.protocols.ProtocolClient import ProtocolClient
-from lib.packets.AckPacket import AckPacket
-from lib.packets.DataPacket import DataPacket
-from lib.packets.constants import PACKET_SIZE
-import time
 
 
 class Client(ProtocolClient):
@@ -15,7 +16,7 @@ class Client(ProtocolClient):
         super().__init__(connection, file_service)
 
     def upload(self, source: str, filename: str):
-       
+
         # Try to get file. Send ERROR and raise if fails.
         file = self.file_service.get_file_local(source) # TODO: add file exceptions
         data = bytearray(file)
@@ -56,12 +57,13 @@ class Client(ProtocolClient):
 
     def download(self, destination: str, filename: str):
         data = bytearray()
-        
+
         req_packet = DownloadRequestPacket(filename)
 
         try:
-            data_1 = self._send_read_req_and_wait_for_first_data_block(req_packet)
-            data.extend(data_1.get_data())
+            data_packet = self._send_read_req_and_wait_for_first_data_block(req_packet)
+            data.extend(data_packet.get_data())
+
         except Exception as e:
             self.logger.error(e)
             raise Exception("Couldn't connect to the server.")
@@ -70,10 +72,18 @@ class Client(ProtocolClient):
 
         es_ultimo = False
 
-        # TODO: timers and attempts
+        # TODO: attempts
 
         while not es_ultimo:
 
+            if data_packet.is_final_packet():
+                es_ultimo = True
+                self.logger.debug("That was the last packet.")
+                # TODO: esperar un timeout por si no llega el ack
+                self.connection.send(AckPacket(data_packet.get_block_number()))
+                print("Data received: ", data)
+                # TODO: wait few seconds in case ack is lost
+                break
             try:
                 ack_packet = AckPacket(bloqnum)
                 data_packet = self._send_ack_and_wait_for_data_packet(ack_packet)
@@ -83,13 +93,6 @@ class Client(ProtocolClient):
             except Exception as e:
                 self.logger.error(f"Error con paquete: {e}")
                 break
-
-            if data_packet.is_final_packet():
-                es_ultimo = True
-                self.logger.debug("That was the last packet.")
-                # TODO: esperar un timeout por si no llega el ack
-                self.connection.send(AckPacket(data_packet.get_block_number()))
-                print("Data received: ", data)
 
             bloqnum += 1
 
@@ -128,7 +131,7 @@ class Client(ProtocolClient):
 
     def _send_read_req_and_wait_for_first_data_block(self, \
         rdq_packet: DownloadRequestPacket) -> DataPacket:
-        
+
         start_time = time.time()
         self.connection.send(rdq_packet)
 
