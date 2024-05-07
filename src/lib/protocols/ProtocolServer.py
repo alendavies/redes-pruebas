@@ -7,6 +7,8 @@ from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.Connection import Connection
 
+import traceback
+
 import time
 
 
@@ -27,6 +29,7 @@ class ProtocolServer:
                 self.logger.success("Download successful.")
             except Exception as e:
                 self.logger.error("Error handling download request: " + str(e))
+                print(traceback.format_exc())
 
         elif isinstance(instance, UploadRequestPacket):
             self.logger.info("Handling upload request for file: " + instance.get_filename())

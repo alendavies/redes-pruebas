@@ -22,4 +22,4 @@ class DownloadRequestPacket(BasePacket):
         return self.data
 
     def __str__(self):
-        return f"Type: Read Request, Filename: {self.data}"
+        return f"[READ_REQ] FILENAME: {self.data}"

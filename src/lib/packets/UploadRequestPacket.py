@@ -22,4 +22,4 @@ class UploadRequestPacket(BasePacket):
         return self.data
 
     def __str__(self):
-        return f"Type: Write Request, Filename: {self.data}"
+        return f"[WRITE_REQ] FILENAME: {self.data}"

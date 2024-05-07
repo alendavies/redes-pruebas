@@ -32,4 +32,4 @@ class DataPacket(BasePacket):
         return cls(unpack(cls.FORMAT, packet[:4])[1], packet[4:])
 
     def __str__(self):
-        return f"Type: Data, Block Number: #{self.block_number}, Data: {self.data}"
+        return f"[DATA] SEQNUM: {self.block_number}"

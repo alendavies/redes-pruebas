@@ -22,4 +22,4 @@ class AckPacket(BasePacket):
         return cls(unpack(cls.FORMAT, packet)[1])
 
     def __str__(self):
-        return f"Type: Ack, Block Number: #{self.block_number}"
+        return f"[ACK] SEQNUM: {self.block_number}"

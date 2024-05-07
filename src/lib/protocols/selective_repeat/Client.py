@@ -14,6 +14,7 @@ class Client(ProtocolClient):
     # esto a SelectiveRepeatClass
     WINDOW_SIZE = 5 
     PACKET_TIMEOUT = 1
+    MAX_ATTEMPTS = 5
 
     def __init__(self, connection: Connection, file_service: ClientFileService):
         super().__init__(connection, file_service)
@@ -34,7 +35,7 @@ class Client(ProtocolClient):
             raise Exception("Couldn't connect to the server.")
 
         # Paquetes en vuelo, tuplas de DataPacket, timestamp. 
-        in_flight: list[tuple[DataPacket, float]] = []
+        in_flight: list[tuple[DataPacket, float, int]] = []
         base = 1 # first block in the window
         next = 1 # next block to be sent
         last = len(data) // PACKET_SIZE + 1
@@ -48,6 +49,7 @@ class Client(ProtocolClient):
             # Mando paquetes hasta llenar la ventana.
             while next - base + 1 < self.WINDOW_SIZE and not sent_last:
                 offset = (next-1) * PACKET_SIZE
+                self.logger.debug("OFFSET: " + str(offset))
 
                 # El contenido del paquete es PACKET_SIZE,
                 # o menos si es el último.
@@ -59,13 +61,16 @@ class Client(ProtocolClient):
                 data_packet = DataPacket(next, chunk)
                 self.connection.send(data_packet)
 
-                in_flight.append((data_packet, time.time()))
+                in_flight.append((data_packet, time.time(), 0))
                 
                 if data_packet.is_final_packet():
                     sent_last = True
                 next += 1
 
-            for packet, timestamp in in_flight:
+            for packet, timestamp, attempts in in_flight:
+                if attempts >= self.MAX_ATTEMPTS:
+                    self.logger.error("Max attempts reached.")
+                    raise Exception("Max attempts reached.")
                 if time.time() - timestamp > self.PACKET_TIMEOUT:
                     self.connection.send(packet)
                     timestamp = time.time()

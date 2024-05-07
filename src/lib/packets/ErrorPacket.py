@@ -18,4 +18,4 @@ class ErrorPacket(BasePacket):
         return cls()
 
     def __str__(self):
-        return f"Type: Error"
+        return f"[ERROR]"
