@@ -1,7 +1,7 @@
 import time
 
 from lib.packets.AckPacket import AckPacket
-from lib.packets.constants import PACKET_SIZE
+from lib.packets.constants import MAX_ATTEMPTS, PACKET_SIZE
 from lib.packets.DataPacket import DataPacket
 from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
@@ -19,10 +19,9 @@ class Server(ProtocolServer):
 
         bloqnum = 0
         es_ultimo = False
+        attempts = 0
 
-        # TODO: timers and attempts
-
-        while not es_ultimo:
+        while not es_ultimo and attempts < MAX_ATTEMPTS:
 
             try:
                 ack_packet = AckPacket(bloqnum)
@@ -30,8 +29,10 @@ class Server(ProtocolServer):
 
                 data.extend(data_packet.get_data())
 
-            except TimeoutError as e:
-                raise Exception("Packet timed out, exiting.")
+            except TimeoutError:
+                self.logger.warning("Timeout: data block #{bloqnum} not received".format(bloqnum = str(bloqnum)))
+                attempts += 1
+                continue
 
             if data_packet.is_final_packet():
                 es_ultimo = True
@@ -42,7 +43,14 @@ class Server(ProtocolServer):
 
             bloqnum += 1
 
-        self.file_service.save_file_on_server(req_packet.get_filename(), data)
+        if attempts >= MAX_ATTEMPTS:
+            raise Exception("Error: couldn't upload file.")
+
+        try:
+            self.file_service.save_file_on_server(req_packet.get_filename(), data)
+        except FileExistsError:
+            self.logger.error("Error: file already exists")
+            raise FileExistsError
 
     def _send_ack_and_wait_for_data_packet(self, ack_packet: AckPacket, timeout = 2) -> DataPacket:
         """
@@ -77,12 +85,17 @@ class Server(ProtocolServer):
 
     def _handle_download(self, req_packet: DownloadRequestPacket):
 
-        data = self.file_service.get_file_from_server(req_packet.get_filename())
+        try:
+            data = self.file_service.get_file_from_server(req_packet.get_filename())
+        except FileNotFoundError:
+            self.logger.error("Error: file not found")
+            raise FileNotFoundError
 
         bloqnum = 1
         es_ultimo = False
+        attempts = 0
 
-        while not es_ultimo:
+        while not es_ultimo and attempts < MAX_ATTEMPTS:
 
             chunk_size = (bloqnum-1) * PACKET_SIZE
 
@@ -94,12 +107,16 @@ class Server(ProtocolServer):
                 chunk = data[chunk_size:chunk_size+PACKET_SIZE]
 
             try:
-                ack_packet = self._send_data_packet_and_wait_for_ack(DataPacket(bloqnum, chunk))
-            except Exception as e:
-                self.logger.error("Timeout: ack not received {}".format(e))
-                break
+                self._send_data_packet_and_wait_for_ack(DataPacket(bloqnum, chunk))
+            except TimeoutError:
+                self.logger.warning("Timeout: ack {bloqnum} not received".format(bloqnum = str(bloqnum)))
+                attempts += 1
+                continue
 
             bloqnum += 1
+
+        if attempts >= MAX_ATTEMPTS:
+            raise Exception("Error: couldn't download file.")
 
     def _send_data_packet_and_wait_for_ack(self, data_packet: DataPacket, timeout = 2) -> AckPacket:
         """
