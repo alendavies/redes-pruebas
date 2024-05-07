@@ -19,7 +19,12 @@ class Client(ProtocolClient):
     def upload(self, source: str, filename: str):
 
         # Try to get file. Send ERROR and raise if fails.
-        file = self.file_service.get_file_local(source) # TODO: add file exceptions
+        try:
+            file = self.file_service.get_file_local(source)
+        except FileNotFoundError:
+            self.logger.error("File not found: " + source)
+            raise FileNotFoundError
+
         data = bytearray(file)
 
         # Send request and wait for ack0.
@@ -120,7 +125,11 @@ class Client(ProtocolClient):
         if attempts >= MAX_ATTEMPTS:
             raise Exception("Error: couldn't download file.")
 
-        self.file_service.save_file_local(destination, data)
+        try:
+            self.file_service.save_file_local(destination, data)
+        except FileExistsError:
+            self.logger.error("File already exists: " + destination)
+            raise FileExistsError
 
     def _send_ack_and_wait_for_data_packet(self, ack_packet: AckPacket, timeout = 2) -> DataPacket:
         """
