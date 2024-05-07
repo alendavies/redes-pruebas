@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from typing import Self
 
 
 class BasePacket:
@@ -10,7 +9,7 @@ class BasePacket:
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, packet: bytes) -> Self:
+    def deserialize(cls, packet: bytes) -> 'BasePacket':
         pass
 
     @abstractmethod
