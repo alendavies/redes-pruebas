@@ -10,7 +10,7 @@ import random
 class Connection:
     SOCKET_SIZE = 1024
 
-    def __init__(self, ip: str, port: int, packet_loss: float = 0.1, median_delay = 0.2):
+    def __init__(self, ip: str, port: int, packet_loss: float = 0, median_delay = 0):
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.ip = ip
         self.port = port
