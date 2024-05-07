@@ -7,12 +7,18 @@ from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.protocols.ProtocolServer import ProtocolServer
 import time
+from typing import TypedDict
+
+class TypeInFlight(TypedDict):
+    packet: DataPacket
+    timestamp: float
+    attempts: int
 
 class Server(ProtocolServer):
 
     WINDOW_SIZE = 5
     PACKET_TIMEOUT = 1
-    MAX_ATTEMPTS = 5
+    MAX_ATTEMPTS = 10
 
     def __init__(self, connection: Connection, file_service: ServerFileService):
         super().__init__(connection, file_service)
@@ -71,7 +77,12 @@ class Server(ProtocolServer):
         data = self.file_service.get_file_from_server(req_packet.get_filename())
 
         # Paquetes en vuelo, tuplas de DataPacket, timestamp. 
-        in_flight: list[tuple[DataPacket, float, int]] = []
+        # TypeInFlight = {
+        #         "packet": DataPacket,
+        #         "timestamp": float,
+        #         "attempts": int
+        # }
+        in_flight: list[TypeInFlight] = []
         base = 1 # first block in the window
         next = 1 # next block to be sent
         last = len(data) // PACKET_SIZE + 1
@@ -79,11 +90,12 @@ class Server(ProtocolServer):
 
 
         while len(in_flight) > 0 or next <= last:
+            print("in_flight: {}, base: {}, next: {}, last: {}".format(len(in_flight), base, next, last))
             # Mando paquetes hasta llenar la ventana.
             # TODO: revisar este + 1
-            while next - base + 1 < self.WINDOW_SIZE and not sent_last:
+            while next - base < self.WINDOW_SIZE and not sent_last:
                 offset = (next-1) * PACKET_SIZE
-                self.logger.debug("OFFSET: " + str(offset))
+                # self.logger.debug("OFFSET: " + str(offset))
 
                 # El contenido del paquete es PACKET_SIZE,
                 # o menos si es el último.
@@ -95,7 +107,7 @@ class Server(ProtocolServer):
                 data_packet = DataPacket(next, chunk)
                 self.connection.send(data_packet)
 
-                in_flight.append((data_packet, time.time(), 0))
+                in_flight.append({"packet": data_packet, "timestamp": time.time(), "attempts": 0})
                 
                 # Si acabo de mandar el último, no aumento más la ventana.
                 # No se van a mandar más paquetes.
@@ -103,15 +115,15 @@ class Server(ProtocolServer):
                     sent_last = True
                 next += 1
 
-            for packet, timestamp, attempts in in_flight:
-                if attempts >= self.MAX_ATTEMPTS:
+            for p in in_flight:
+                if p["attempts"] >= self.MAX_ATTEMPTS:
                     self.logger.error("Max attempts reached.")
                     raise Exception("Max attempts reached.")
-                if time.time() - timestamp > self.PACKET_TIMEOUT:
-                    self.logger.warning("Sending packet again: " + str(packet.get_block_number()))
-                    self.connection.send(packet)
-                    timestamp = time.time()
-                    attempts += 1
+                if time.time() - p["timestamp"] > self.PACKET_TIMEOUT:
+                    self.logger.warning("Sending packet again: " + str(p["packet"].get_block_number()))
+                    self.connection.send(p["packet"])
+                    p["timestamp"]= time.time()
+                    p["attempts"] += 1
 
             try:
                 packet, _ = self.connection.receive()
@@ -121,9 +133,10 @@ class Server(ProtocolServer):
             if isinstance(packet, AckPacket):
                 # Saco el paquete acknowledged the in_flight.
                 for i in range(len(in_flight)):
-                    if in_flight[i][0].get_block_number() == packet.get_block_number():
+                    if in_flight[i]["packet"].get_block_number() == packet.get_block_number():
                         in_flight.pop(i)
                         break
                 # Si el paquete acknowledgeado es el base, actualizo la base al primero in_flight.
                 if len(in_flight) > 0 and packet.get_block_number() == base:
-                    base = in_flight[0][0].get_block_number()
+                    base = in_flight[0]["packet"].get_block_number()
+

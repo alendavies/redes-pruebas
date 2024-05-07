@@ -12,8 +12,8 @@ import time
 class Client(ProtocolClient):
 
     # esto a SelectiveRepeatClass
-    WINDOW_SIZE = 5 
-    PACKET_TIMEOUT = 1
+    WINDOW_SIZE = 5
+    PACKET_TIMEOUT = 2
     MAX_ATTEMPTS = 5
 
     def __init__(self, connection: Connection, file_service: ClientFileService):
@@ -105,11 +105,14 @@ class Client(ProtocolClient):
         temp_file = bytearray()
         acknowledged = {}
         continue_receiving = True
+        received_last = False
+        received_all = False
+        last_block = 0
 
         # TODO: data packet get_block_offset()
         # aux function que haga receive y valide que sea un data
 
-        while continue_receiving:
+        while not received_all:
             if isinstance(packet, DataPacket):
                 n = packet.get_block_number()
                 self.connection.send(AckPacket(n))
@@ -118,25 +121,49 @@ class Client(ProtocolClient):
                     temp_file[n*PACKET_SIZE:n*PACKET_SIZE] = packet.get_data()
                     acknowledged[n] = True
 
-                if len(packet.data) < PACKET_SIZE:
-                    continue_receiving = False
+                if packet.get_data_size() < PACKET_SIZE:
                     self.logger.debug("Last packet received.")
-                    for i in range(1, packet.block_number):
-                        if i not in acknowledged:
-                            continue_receiving = True
-                            break
-                    print("Continue receiving is: " + str(continue_receiving))
+                    print(len(acknowledged))
+                    received_last = True
+                    last_block = packet.get_block_number()
+
+                if received_last and len(acknowledged) == last_block:
+                    self.logger.debug("All packets received.")
+                    received_all = True
+
             else:
                 self.logger.warning("Unexpected packet received.")
 
+            if not received_all:
+                try:
+                    packet, _ = self.connection.receive(True, 10)
+                except TimeoutError:
+                    self.logger.error("Timeout.")
+                    raise Exception("Timeout.")
+                except BlockingIOError:
+                    pass
+                except Exception as e:
+                    self.logger.error("Error receiving packets: " + str(e))
+
+        finished_timestamp = time.time()
+        self.logger.debug("Finished. Dallying...")
+
+        while time.time() - finished_timestamp < 5:
             try:
                 packet, _ = self.connection.receive()
-            except BlockingIOError:
-                pass
-            except Exception as e:
-                self.logger.error("Error receiving packets: " + str(e))
+            except Exception:
+                continue
 
-        self.file_service.save_file_local(destination, temp_file)
+            if isinstance(packet, DataPacket):
+                n = packet.get_block_number()
+                self.connection.send(AckPacket(n))
+
+        self.logger.debug("Saving file.")
+        try:
+            self.file_service.save_file_local(destination, temp_file)
+        except Exception as e:
+            self.logger.error("Error saving file: " + str(e))
+            raise Exception("Error saving file.")
 
         # TODO: add logger tpo file service
 
