@@ -27,7 +27,7 @@ class ClientFileService:
     def save_file_local(self, destination: str, data: bytes):
         self.logger.debug("Saving file: " + destination)
         file = open(destination, "wb")
-        file.write
+        file.write(data)
         file.close()
 
     def get_file_local(self, source: str):
