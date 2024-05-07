@@ -39,7 +39,6 @@ class Client(ProtocolClient):
                     break
 
             except TimeoutError:
-                self.logger.warning("Timeout: ack0 not received, retrying...")
                 req_attempts += 1
                 continue
 
@@ -67,7 +66,6 @@ class Client(ProtocolClient):
             try:
                 self._send_data_packet_and_wait_for_ack(DataPacket(bloqnum, chunk))
             except TimeoutError:
-                self.logger.warning("Timeout: ack for block {} not received, retrying...".format(str(bloqnum)))
                 attempts += 1
                 continue
 
@@ -92,7 +90,6 @@ class Client(ProtocolClient):
                 break
 
             except TimeoutError:
-                self.logger.warning("Timeout: first data block not received, retrying...")
                 req_attempts += 1
                 continue
 
@@ -118,7 +115,6 @@ class Client(ProtocolClient):
                 data.extend(data_packet.get_data())
 
             except TimeoutError:
-                self.logger.warning(f"Timeout: data block #{bloqnum} not received, retrying...")
                 attempts += 1
                 continue
 

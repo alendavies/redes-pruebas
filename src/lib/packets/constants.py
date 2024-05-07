@@ -1,7 +1,7 @@
 from enum import IntEnum
 
 PACKET_SIZE = 512
-MAX_ATTEMPTS = 3
+MAX_ATTEMPTS = 15
 
 
 class Type(IntEnum):

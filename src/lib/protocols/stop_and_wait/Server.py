@@ -30,7 +30,6 @@ class Server(ProtocolServer):
                 data.extend(data_packet.get_data())
 
             except TimeoutError:
-                self.logger.warning("Timeout: data block #{bloqnum} not received".format(bloqnum = str(bloqnum)))
                 attempts += 1
                 continue
 
@@ -81,8 +80,8 @@ class Server(ProtocolServer):
             elapsed_time = time.time() - start_time
 
             if elapsed_time >= timeout:
-                self.logger.warning("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number())))
-                raise TimeoutError("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number())))
+                self.logger.warning("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number()+1)))
+                raise TimeoutError("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number()+1)))
 
     def _handle_download(self, req_packet: DownloadRequestPacket):
 
@@ -110,7 +109,6 @@ class Server(ProtocolServer):
             try:
                 self._send_data_packet_and_wait_for_ack(DataPacket(bloqnum, chunk))
             except TimeoutError:
-                self.logger.warning("Timeout: ack {bloqnum} not received".format(bloqnum = str(bloqnum)))
                 attempts += 1
                 continue
 

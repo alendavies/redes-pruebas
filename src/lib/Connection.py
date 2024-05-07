@@ -1,11 +1,12 @@
-from socket import socket, AF_INET, SOCK_DGRAM
+import math
+import random
+import time
+from socket import AF_INET, SOCK_DGRAM, socket
+
+from lib.loggers.PacketLogger import PacketLogger
 from lib.packets.BasePacket import BasePacket
 from lib.packets.PacketParser import PacketParser
-from lib.loggers.PacketLogger import PacketLogger
 
-import math
-import time
-import random
 
 class Connection:
     SOCKET_SIZE = 1024
