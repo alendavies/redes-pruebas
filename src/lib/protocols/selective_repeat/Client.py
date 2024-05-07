@@ -1,7 +1,7 @@
+from lib.FileService import ClientFileService
 from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.constants import PACKET_SIZE
 from lib.protocols.ProtocolClient import ProtocolClient
-from lib.FileService import FileService
 from lib.Connection import Connection
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.packets.AckPacket import AckPacket
@@ -15,13 +15,13 @@ class Client(ProtocolClient):
     WINDOW_SIZE = 5 
     PACKET_TIMEOUT = 1
 
-    def __init__(self, connection: Connection, file_service: FileService):
+    def __init__(self, connection: Connection, file_service: ClientFileService):
         super().__init__(connection, file_service)
 
-    def upload(self, filename: str):
+    def upload(self, source: str, filename: str):
 
         # Try to get file. Send ERROR and raise if fails.
-        file = self.file_service.get_file(filename) # TODO: add file exceptions
+        file = self.file_service.get_file_local(source) # TODO: add file exceptions
         data = bytearray(file)
 
         # Send request and wait for ack0.
@@ -87,7 +87,7 @@ class Client(ProtocolClient):
                     base = in_flight[0][0].get_block_number()
             
 
-    def download(self, filename: str):
+    def download(self, destination: str, filename: str):
 
         req_packet = DownloadRequestPacket(filename)
 
@@ -131,7 +131,7 @@ class Client(ProtocolClient):
             except Exception as e:
                 self.logger.error("Error receiving packets: " + str(e))
 
-        self.file_service.save_file(req_packet.get_filename(), temp_file)
+        self.file_service.save_file_local(destination, temp_file)
 
         # TODO: add logger tpo file service
 

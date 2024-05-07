@@ -3,7 +3,7 @@ import argparse
 import threading
 import time
 
-from lib.FileService import FileService
+from lib.FileService import ServerFileService
 from lib.loggers.BaseLogger import BaseLogger
 from lib.loggers.ServerSideLogger import ServerSideLogger
 from lib.protocols.stop_and_wait.Server import Server as StopAndWait
@@ -105,7 +105,7 @@ def main():
 
     # Now we can access the values with args.host, args.port, etc.
     connection_protocol: ProtocolServer
-    file_service = FileService('./files/server_root/')
+    file_service = ServerFileService(args.src)
 
     # MAX_QUEUE = 5
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -129,15 +129,15 @@ def main():
         else :
             print("No protocol selected.")
             break
+        #
+        # client_thread = threading.Thread(target=connection_protocol.handle, args=([packet]))
+        # client_thread.start()
 
-        client_thread = threading.Thread(target=connection_protocol.handle, args=([packet]))
-        client_thread.start()
-
-        # try:
-        #     print("Handling request")
-        #     connection_protocol.handle(packet)
-        # except Exception as e:
-        #     print(e)
+        try:
+            print("Handling request")
+            connection_protocol.handle(packet)
+        except Exception as e:
+            print(e)
 
 # def handle_incoming(protocol: ProtocolServer):
 #     print("hola from thread")

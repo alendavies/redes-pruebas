@@ -1,5 +1,5 @@
 from lib.Connection import Connection
-from lib.FileService import FileService
+from lib.FileService import ClientFileService
 from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.protocols.ProtocolClient import ProtocolClient
@@ -11,13 +11,13 @@ import time
 
 class Client(ProtocolClient):
 
-    def __init__(self, connection: Connection, file_service: FileService):
+    def __init__(self, connection: Connection, file_service: ClientFileService):
         super().__init__(connection, file_service)
 
-    def upload(self, filename: str):
+    def upload(self, source: str, filename: str):
        
         # Try to get file. Send ERROR and raise if fails.
-        file = self.file_service.get_file(filename) # TODO: add file exceptions
+        file = self.file_service.get_file_local(source) # TODO: add file exceptions
         data = bytearray(file)
 
         # Send request and wait for ack0.
@@ -54,7 +54,7 @@ class Client(ProtocolClient):
 
             bloqnum += 1
 
-    def download(self, filename: str):
+    def download(self, destination: str, filename: str):
         data = bytearray()
         
         req_packet = DownloadRequestPacket(filename)
@@ -93,7 +93,7 @@ class Client(ProtocolClient):
 
             bloqnum += 1
 
-        self.file_service.save_file(filename, data)
+        self.file_service.save_file_local(destination, data)
 
     def _send_ack_and_wait_for_data_packet(self, ack_packet: AckPacket, timeout = 2) -> DataPacket:
         """

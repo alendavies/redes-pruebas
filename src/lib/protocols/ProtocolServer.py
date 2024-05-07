@@ -1,25 +1,23 @@
 from abc import abstractmethod
 
+from lib.FileService import ServerFileService
 from lib.loggers.ServerSideLogger import ServerSideLogger
 from lib.packets.PacketParser import PacketParser
 from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.Connection import Connection
-from lib.FileService import FileService
 
 import time
 
 
 class ProtocolServer:
 
-    def __init__(self, connection: Connection, file_service: FileService):
+    def __init__(self, connection: Connection, file_service: ServerFileService):
         self.connection = connection
         self.file_service = file_service
         self.logger = ServerSideLogger()
 
     def handle(self, packet: bytes):
-        time.sleep(10)
-        print("Handling packet")
         instance = PacketParser.get_packet(packet)
 
         if isinstance(instance, DownloadRequestPacket):

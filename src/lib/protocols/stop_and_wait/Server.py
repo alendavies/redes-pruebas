@@ -42,7 +42,7 @@ class Server(ProtocolServer):
 
             bloqnum += 1
 
-        self.file_service.save_file(req_packet.get_filename(), data)
+        self.file_service.save_file_on_server(req_packet.get_filename(), data)
 
     def _send_ack_and_wait_for_data_packet(self, ack_packet: AckPacket, timeout = 2) -> DataPacket:
         """
@@ -77,7 +77,7 @@ class Server(ProtocolServer):
 
     def _handle_download(self, req_packet: DownloadRequestPacket):
 
-        data = self.file_service.get_file(req_packet.get_filename())
+        data = self.file_service.get_file_from_server(req_packet.get_filename())
 
         bloqnum = 1
         es_ultimo = False

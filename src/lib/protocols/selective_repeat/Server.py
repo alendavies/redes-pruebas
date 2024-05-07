@@ -1,5 +1,5 @@
 from lib.Connection import Connection
-from lib.FileService import FileService
+from lib.FileService import ServerFileService
 from lib.packets.AckPacket import AckPacket
 from lib.packets.constants import PACKET_SIZE
 from lib.packets.DataPacket import DataPacket
@@ -13,7 +13,7 @@ class Server(ProtocolServer):
     WINDOW_SIZE = 5
     PACKET_TIMEOUT = 1
 
-    def __init__(self, connection: Connection, file_service: FileService):
+    def __init__(self, connection: Connection, file_service: ServerFileService):
         super().__init__(connection, file_service)
 
     def _handle_upload(self, req_packet: UploadRequestPacket):
@@ -59,7 +59,7 @@ class Server(ProtocolServer):
                 self.logger.error("Error receiving packets: " + str(e))
 
         try:
-            self.file_service.save_file(req_packet.get_filename(), temp_file)
+            self.file_service.save_file_on_server(req_packet.get_filename(), temp_file)
         except Exception as e:
             self.logger.error("Error saving file: " + str(e))
 
@@ -67,7 +67,7 @@ class Server(ProtocolServer):
     def _handle_download(self, req_packet: DownloadRequestPacket):
 
         # TODO: try exccept
-        data = self.file_service.get_file(req_packet.get_filename())
+        data = self.file_service.get_file_from_server(req_packet.get_filename())
 
         # Paquetes en vuelo, tuplas de DataPacket, timestamp. 
         in_flight: list[tuple[DataPacket, float]] = []

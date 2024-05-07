@@ -1,23 +1,28 @@
 from abc import abstractmethod
 
+from lib.FileService import ClientFileService
 from lib.loggers.ClientSideLogger import ClientSideLogger
 
 from ..Connection import Connection
-from ..FileService import FileService
-
 
 class ProtocolClient:
 
-    def __init__(self, connection: Connection, file_service: FileService):
+    def __init__(self, connection: Connection, file_service: ClientFileService):
         self.connection = connection
         self.file_service = file_service
         self.logger = ClientSideLogger()
 
     @abstractmethod
-    def upload(self, filename: str):
+    def upload(self, source: str, filename: str):
+        """
+        Uploads the local `source` to the server as `filename`.
+        """
         pass
 
     @abstractmethod
-    def download(self, filename: str):
+    def download(self, destination: str, filename: str):
+        """
+        Downloads the server's `filename` to the local `destination`.
+        """
         pass
 

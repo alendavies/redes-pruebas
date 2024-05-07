@@ -1,5 +1,5 @@
 import argparse
-from lib.FileService import FileService
+from lib.FileService import ClientFileService
 from lib.loggers.BaseLogger import BaseLogger
 from lib.loggers.ClientSideLogger import ClientSideLogger
 from lib.protocols.stop_and_wait.Client import Client as StopAndWait
@@ -93,7 +93,7 @@ def main():
 
     connection_protocol: ProtocolClient 
     connection = Connection(args.host, args.port)
-    file_service = FileService('./files/client_root/')
+    file_service = ClientFileService()
     logger = ClientSideLogger()
 
     if args.stwa:
@@ -108,7 +108,7 @@ def main():
     
     try:
         logger.info("Handling upload request for file: " + args.name)
-        connection_protocol.upload(args.name)
+        connection_protocol.upload(args.src, args.name)
         logger.success("Completed upload of {}.".format(args.name))
     except Exception as e:
         logger.error(e)
