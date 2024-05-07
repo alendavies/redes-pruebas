@@ -1,9 +1,10 @@
 import time
+from tkinter.tix import MAX
 
 from lib.Connection import Connection
 from lib.FileService import ClientFileService
 from lib.packets.AckPacket import AckPacket
-from lib.packets.constants import PACKET_SIZE
+from lib.packets.constants import MAX_ATTEMPTS, PACKET_SIZE
 from lib.packets.DataPacket import DataPacket
 from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.UploadRequestPacket import UploadRequestPacket
@@ -23,19 +24,30 @@ class Client(ProtocolClient):
 
         # Send request and wait for ack0.
         req_packet = UploadRequestPacket(filename)
+        req_attempts = 0
 
-        try:
-            self._send_write_req_and_wait_for_ack0(req_packet)
-        except Exception as e:
-            self.logger.error(e)
+        while req_attempts < MAX_ATTEMPTS:
+
+            try:
+                ack_0 = self._send_write_req_and_wait_for_ack0(req_packet)
+                if ack_0.get_block_number() == 0:
+                    break
+
+            except TimeoutError:
+                self.logger.warning("Timeout: ack0 not received, retrying...")
+                req_attempts += 1
+                continue
+
+        if req_attempts >= MAX_ATTEMPTS:
             raise Exception("Couldn't connect to the server.")
 
         # Receive file.
 
         bloqnum = 1
         es_ultimo = False
+        attempts = 0
 
-        while not es_ultimo:
+        while not es_ultimo and attempts < MAX_ATTEMPTS:
 
             offset = (bloqnum-1) * PACKET_SIZE
 
@@ -49,35 +61,43 @@ class Client(ProtocolClient):
 
             try:
                 self._send_data_packet_and_wait_for_ack(DataPacket(bloqnum, chunk))
-            except Exception as e:
-                self.logger.error(e)
-                raise Exception("Nunca se recibió ack del paquete {}".format(str(bloqnum)))
+            except TimeoutError:
+                self.logger.warning("Timeout: ack for block {} not received, retrying...".format(str(bloqnum)))
+                attempts += 1
+                continue
 
             bloqnum += 1
+
+        if attempts >= MAX_ATTEMPTS:
+            raise Exception("Error: couldn't upload file.")
 
     def download(self, destination: str, filename: str):
         data = bytearray()
 
         req_packet = DownloadRequestPacket(filename)
+        req_attempts = 0
 
-        try:
-            data_packet = self._send_read_req_and_wait_for_first_data_block(req_packet)
-            data.extend(data_packet.get_data())
+        while req_attempts < MAX_ATTEMPTS:
 
-        except Exception as e:
-            self.logger.error(e)
+            try:
+                data_packet = self._send_read_req_and_wait_for_first_data_block(req_packet)
+                data.extend(data_packet.get_data())
+                break
+
+            except TimeoutError:
+                self.logger.warning("Timeout: first data block not received, retrying...")
+                req_attempts += 1
+                continue
+
+        if req_attempts >= MAX_ATTEMPTS:
             raise Exception("Couldn't connect to the server.")
 
         bloqnum = 1
+        attempts = 0
 
-        es_ultimo = False
-
-        # TODO: attempts
-
-        while not es_ultimo:
+        while attempts < MAX_ATTEMPTS:
 
             if data_packet.is_final_packet():
-                es_ultimo = True
                 self.logger.debug("That was the last packet.")
                 # TODO: esperar un timeout por si no llega el ack
                 self.connection.send(AckPacket(data_packet.get_block_number()))
@@ -90,11 +110,15 @@ class Client(ProtocolClient):
 
                 data.extend(data_packet.get_data())
 
-            except Exception as e:
-                self.logger.error(f"Error con paquete: {e}")
-                break
+            except TimeoutError:
+                self.logger.warning(f"Timeout: data block #{bloqnum} not received, retrying...")
+                attempts += 1
+                continue
 
             bloqnum += 1
+
+        if attempts >= MAX_ATTEMPTS:
+            raise Exception("Error: couldn't download file.")
 
         self.file_service.save_file_local(destination, data)
 
