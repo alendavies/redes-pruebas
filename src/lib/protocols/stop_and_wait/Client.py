@@ -1,5 +1,4 @@
 import time
-from tkinter.tix import MAX
 
 from lib.Connection import Connection
 from lib.FileService import ClientFileService
