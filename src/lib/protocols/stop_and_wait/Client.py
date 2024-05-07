@@ -35,6 +35,7 @@ class Client(ProtocolClient):
             try:
                 ack_0 = self._send_write_req_and_wait_for_ack0(req_packet)
                 if ack_0.get_block_number() == 0:
+                    req_attempts = 0
                     break
 
             except TimeoutError:
@@ -70,6 +71,7 @@ class Client(ProtocolClient):
                 attempts += 1
                 continue
 
+            attempts = 0
             bloqnum += 1
 
         if attempts >= MAX_ATTEMPTS:
@@ -86,6 +88,7 @@ class Client(ProtocolClient):
             try:
                 data_packet = self._send_read_req_and_wait_for_first_data_block(req_packet)
                 data.extend(data_packet.get_data())
+                req_attempts = 0
                 break
 
             except TimeoutError:
@@ -119,6 +122,7 @@ class Client(ProtocolClient):
                 attempts += 1
                 continue
 
+            attempts = 0
             bloqnum += 1
 
         if attempts >= MAX_ATTEMPTS:

@@ -41,6 +41,7 @@ class Server(ProtocolServer):
                 self.connection.send(AckPacket(data_packet.get_block_number()))
                 print("Data received: ", data)
 
+            attempts = 0
             bloqnum += 1
 
         if attempts >= MAX_ATTEMPTS:
@@ -113,6 +114,7 @@ class Server(ProtocolServer):
                 attempts += 1
                 continue
 
+            attempts = 0
             bloqnum += 1
 
         if attempts >= MAX_ATTEMPTS:
