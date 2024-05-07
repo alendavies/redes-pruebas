@@ -1,5 +1,5 @@
-from enum import Enum
 import logging
+from enum import Enum
 
 logging.basicConfig(level = logging.DEBUG, format = "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s")
 
@@ -22,9 +22,10 @@ class Colors(Enum):
     YELLOW = "\x1b[33m"
     RED = "\x1b[31m"
     PURPLE = "\x1b[35m"
+    GRAY = "\x1b[35m"
     BLUE = "\x1b[34m"
     CYAN = "\x1b[36m"
-    GRAY = "\033[0;37m"
+    # GRAY = "\033[0;37m"
     RESET = "\x1b[0m"
 
 class BaseLogger:
