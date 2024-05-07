@@ -10,7 +10,7 @@ class Connection:
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.ip = ip
         self.port = port
-        self.logger = PacketLogger()
+        self.logger = PacketLogger(self.ip, self.port)
 
     def send(self, packet: BasePacket):
         self.socket.sendto(packet.serialize(), (self.ip, self.port))

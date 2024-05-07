@@ -9,14 +9,16 @@ from lib.packets.ErrorPacket import ErrorPacket
 
 class PacketLogger(BaseLogger):
 
-    def __init__(self):
+    def __init__(self, ip: str, port: int):
+        self.ip = ip
+        self.port = port
         super().__init__("Packet")
 
     def on_packet_sent(self, packet: BasePacket):
-        self.debug("[SENT] {}".format(packet.__str__()))
+        self.debug("[SENT to {ip}:{port}] {desc}".format(ip=self.ip, port=self.port, desc=packet.__str__()))
 
     def on_packet_received(self, packet: BasePacket):
-        self.debug("[RECEIVED] {}".format(packet.__str__()))
+        self.debug("[RECEIVED from {ip}:{port}] {desc}".format(ip=self.ip, port=self.port, desc=packet.__str__()))
 
     def on_upload_request_sent(self, packet: UploadRequestPacket):
         pass

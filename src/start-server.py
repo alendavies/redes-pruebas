@@ -1,7 +1,11 @@
 from socket import socket, AF_INET, SOCK_DGRAM
 import argparse
+import threading
+import time
 
 from lib.FileService import FileService
+from lib.loggers.BaseLogger import BaseLogger
+from lib.loggers.ServerSideLogger import ServerSideLogger
 from lib.protocols.stop_and_wait.Server import Server as StopAndWait
 from lib.protocols.selective_repeat.Server import Server as SelectiveRepeat
 from lib.protocols.ProtocolServer import ProtocolServer
@@ -97,19 +101,24 @@ def main():
     if args.stwa and args.sere:
         args.stwa = False
 
-    # Now we can access the values with args.host, args.port, etc.
+    logger = ServerSideLogger()
 
+    # Now we can access the values with args.host, args.port, etc.
+    connection_protocol: ProtocolServer
+    file_service = FileService('./files/server_root/')
+
+    # MAX_QUEUE = 5
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind((args.host, args.port))
-    print("The server is ready to receive")
+    # serverSocket.listen(MAX_QUEUE)
+    print("The server is ready to receive on {}:{}.".format(args.host, args.port))
 
 
     while True:
         packet, (ip, port) = serverSocket.recvfrom(2048)
-            
-        connection_protocol: ProtocolServer
+        
+        logger.info("Incoming from {}:{}".format(ip, port))
         connection = Connection(ip, port)
-        file_service = FileService('./files/server_root/')
 
         if args.stwa:
             connection_protocol = StopAndWait(connection, file_service)
@@ -121,11 +130,19 @@ def main():
             print("No protocol selected.")
             break
 
-        try:
-            print("Handling request")
-            connection_protocol.handle(packet)
-        except Exception as e:
-            print(e)
+        client_thread = threading.Thread(target=connection_protocol.handle, args=([packet]))
+        client_thread.start()
+
+        # try:
+        #     print("Handling request")
+        #     connection_protocol.handle(packet)
+        # except Exception as e:
+        #     print(e)
+
+# def handle_incoming(protocol: ProtocolServer):
+#     print("hola from thread")
+#     time.sleep(10)
+#     print("chau from thread")
 
 
 if __name__ == "__main__":

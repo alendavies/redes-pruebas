@@ -7,6 +7,8 @@ from lib.packets.UploadRequestPacket import UploadRequestPacket
 from lib.Connection import Connection
 from lib.FileService import FileService
 
+import time
+
 
 class ProtocolServer:
 
@@ -16,6 +18,8 @@ class ProtocolServer:
         self.logger = ServerSideLogger()
 
     def handle(self, packet: bytes):
+        time.sleep(10)
+        print("Handling packet")
         instance = PacketParser.get_packet(packet)
 
         if isinstance(instance, DownloadRequestPacket):

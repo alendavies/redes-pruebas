@@ -10,7 +10,7 @@ import time
 
 class Server(ProtocolServer):
 
-    WINDOW_SIZE = 10
+    WINDOW_SIZE = 5
     PACKET_TIMEOUT = 1
 
     def __init__(self, connection: Connection, file_service: FileService):
@@ -79,6 +79,7 @@ class Server(ProtocolServer):
 
         while len(in_flight) > 0 or next <= last:
             # Mando paquetes hasta llenar la ventana.
+            # TODO: revisar este + 1
             while next - base + 1 < self.WINDOW_SIZE and not sent_last:
                 offset = (next-1) * PACKET_SIZE
 

@@ -12,7 +12,7 @@ import time
 class Client(ProtocolClient):
 
     # esto a SelectiveRepeatClass
-    WINDOW_SIZE = 10
+    WINDOW_SIZE = 5 
     PACKET_TIMEOUT = 1
 
     def __init__(self, connection: Connection, file_service: FileService):
