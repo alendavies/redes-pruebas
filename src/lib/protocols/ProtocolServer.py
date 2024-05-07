@@ -40,9 +40,9 @@ class ProtocolServer:
         pass
 
     @abstractmethod
-    def _handle_upload(self, packet: UploadRequestPacket):
+    def _handle_upload(self, req_packet: UploadRequestPacket):
         pass
 
     @abstractmethod
-    def _handle_download(self, packet: DownloadRequestPacket):
+    def _handle_download(self, req_packet: DownloadRequestPacket):
         pass

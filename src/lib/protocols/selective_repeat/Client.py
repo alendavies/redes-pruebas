@@ -1,3 +1,4 @@
+from lib.packets.DownloadRequestPacket import DownloadRequestPacket
 from lib.packets.constants import PACKET_SIZE
 from lib.protocols.ProtocolClient import ProtocolClient
 from lib.FileService import FileService
@@ -10,6 +11,7 @@ import time
 
 class Client(ProtocolClient):
 
+    # esto a SelectiveRepeatClass
     WINDOW_SIZE = 10
     PACKET_TIMEOUT = 1
 
@@ -36,7 +38,6 @@ class Client(ProtocolClient):
         base = 1 # first block in the window
         next = 1 # next block to be sent
         last = len(data) // PACKET_SIZE + 1
-        print(last)
         sent_last = False
 
         # TODO: se puede hacer más elegante lo del timestamp
@@ -60,8 +61,6 @@ class Client(ProtocolClient):
 
                 in_flight.append((data_packet, time.time()))
                 
-                # Si acabo de mandar el último, no aumento más la ventana.
-                # No se van a mandar más paquetes.
                 if data_packet.is_final_packet():
                     sent_last = True
                 next += 1
@@ -71,6 +70,7 @@ class Client(ProtocolClient):
                     self.connection.send(packet)
                     timestamp = time.time()
 
+            # TODO: esto podría ser un while receive
             try:
                 packet, _ = self.connection.receive()
             except Exception:
@@ -83,23 +83,80 @@ class Client(ProtocolClient):
                         in_flight.pop(i)
                         break
                 # Si el paquete acknowledgeado es el base, actualizo la base al primero in_flight.
-                if packet.get_block_number() == base:
+                if len(in_flight) > 0 and packet.get_block_number() == base:
                     base = in_flight[0][0].get_block_number()
             
 
-
-        # transmit file
-        # mientras haya paquetes en vuelo O queden paquetes por mandar
-        # mandar paquetes hasta llenar la ventana
-        # recibir acks, sacarlos de inflight y actualizar base
-
     def download(self, filename: str):
-        # send download request
-        # wait for first data block
-        # process first data block
 
-        # continue receiving data blocks
-        raise NotImplementedError("Not implemented.")
+        req_packet = DownloadRequestPacket(filename)
+
+        try:
+            packet = self._send_read_req_and_wait_for_some_data_block(req_packet)
+        except Exception as e:
+            self.logger.error(e)
+            raise Exception("Couldn't connect to the server.")
+            
+        temp_file = bytearray()
+        acknowledged = {}
+        continue_receiving = True
+
+        # TODO: data packet get_block_offset()
+        # aux function que haga receive y valide que sea un data
+
+        while continue_receiving:
+            if isinstance(packet, DataPacket):
+                n = packet.get_block_number()
+                self.connection.send(AckPacket(n))
+
+                if n not in acknowledged:
+                    temp_file[n*PACKET_SIZE:n*PACKET_SIZE] = packet.get_data()
+                    acknowledged[n] = True
+
+                if len(packet.data) < PACKET_SIZE:
+                    continue_receiving = False
+                    self.logger.debug("Last packet received.")
+                    for i in range(1, packet.block_number):
+                        if i not in acknowledged:
+                            continue_receiving = True
+                            break
+                    print("Continue receiving is: " + str(continue_receiving))
+            else:
+                self.logger.warning("Unexpected packet received.")
+
+            try:
+                packet, _ = self.connection.receive()
+            except BlockingIOError:
+                pass
+            except Exception as e:
+                self.logger.error("Error receiving packets: " + str(e))
+
+        self.file_service.save_file(req_packet.get_filename(), temp_file)
+
+        # TODO: add logger tpo file service
+
+    def _send_read_req_and_wait_for_some_data_block(self, rrq_packet: DownloadRequestPacket) -> DataPacket:
+        start_time = time.time()
+        self.connection.send(rrq_packet)
+
+        while True:
+            try:
+                packet, server_addr = self.connection.receive()
+
+                if isinstance(packet, DataPacket):
+                    self.connection.ip = server_addr[0]
+                    self.connection.port = server_addr[1]
+                    return packet
+            except BlockingIOError:
+                pass
+
+            elapsed_time = time.time() - start_time
+
+            if elapsed_time >= 2: # TODO: global timeout
+                self.logger.warning("Timeout: never received data.")
+                # raise custom_errors.Timeout
+                raise TimeoutError # TODO: exceptions
+
 
     def _send_write_req_and_wait_for_ack0(self, \
         wrq_packet: UploadRequestPacket) -> AckPacket:

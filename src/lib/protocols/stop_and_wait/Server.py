@@ -13,7 +13,7 @@ class Server(ProtocolServer):
     def __init__(self, connection, file_service):
         super().__init__(connection, file_service)
 
-    def _handle_upload(self, packet: UploadRequestPacket):
+    def _handle_upload(self, req_packet: UploadRequestPacket):
 
         data = bytearray()
 
@@ -42,7 +42,7 @@ class Server(ProtocolServer):
 
             bloqnum += 1
 
-        self.file_service.save_file(packet.get_filename(), data)
+        self.file_service.save_file(req_packet.get_filename(), data)
 
     def _send_ack_and_wait_for_data_packet(self, ack_packet: AckPacket, timeout = 2) -> DataPacket:
         """
@@ -75,9 +75,9 @@ class Server(ProtocolServer):
                 self.logger.warning("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number())))
                 raise TimeoutError("Timeout: data block #{bloqnum} not received".format(bloqnum = str(ack_packet.get_block_number())))
 
-    def _handle_download(self, packet: DownloadRequestPacket):
+    def _handle_download(self, req_packet: DownloadRequestPacket):
 
-        data = self.file_service.get_file(packet.get_filename())
+        data = self.file_service.get_file(req_packet.get_filename())
 
         bloqnum = 1
         es_ultimo = False
