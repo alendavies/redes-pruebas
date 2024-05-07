@@ -129,15 +129,15 @@ def main():
         else :
             print("No protocol selected.")
             break
-        #
-        # client_thread = threading.Thread(target=connection_protocol.handle, args=([packet]))
-        # client_thread.start()
 
-        try:
-            print("Handling request")
-            connection_protocol.handle(packet)
-        except Exception as e:
-            print(e)
+        client_thread = threading.Thread(target=connection_protocol.handle, args=([packet]))
+        client_thread.start()
+
+        # try:
+        #     print("Handling request")
+        #     connection_protocol.handle(packet)
+        # except Exception as e:
+        #     print(e)
 
 # def handle_incoming(protocol: ProtocolServer):
 #     print("hola from thread")
